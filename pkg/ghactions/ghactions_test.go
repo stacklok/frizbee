@@ -168,7 +168,7 @@ func TestGetChecksum(t *testing.T) {
 		{
 			name: "actions/checkout with invalid action returns error",
 			args: args{
-				action: "actions/checkout/invalid",
+				action: "invalid-action",
 				ref:    "v4.1.1",
 			},
 			want:    "",
@@ -198,7 +198,15 @@ func TestGetChecksum(t *testing.T) {
 				action: "bufbuild/buf-setup-action",
 				ref:    "v1",
 			},
-			want: "asdfas",
+			want: "382440cdb8ec7bc25a68d7b4711163d95f7cc3aa",
+		},
+		{
+			name: "anchore/sbom-action/download-syft with a sub-action works",
+			args: args{
+				action: "anchore/sbom-action/download-syft",
+				ref:    "v0.14.3",
+			},
+			want: "78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1",
 		},
 	}
 	for _, tt := range tests {

@@ -28,7 +28,9 @@ import (
 func parseActionFragments(action string) (owner string, repo string, err error) {
 	frags := strings.Split(action, "/")
 
-	if len(frags) != 2 {
+	// if we have more than 2 fragments, we're probably dealing with
+	// sub-actions, so we take the first two fragments as the owner and repo
+	if len(frags) < 2 {
 		return "", "", fmt.Errorf("%w: '%s' reference is incorrect", ErrInvalidAction, action)
 	}
 
