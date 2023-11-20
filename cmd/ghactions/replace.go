@@ -18,11 +18,13 @@ package ghactions
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
 	billyutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/go-github/v56/github"
@@ -43,6 +45,7 @@ func init() {
 	GHActionsCmd.AddCommand(replaceCmd)
 
 	replaceCmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
+	replaceCmd.Flags().BoolP("dry-run", "n", false, "dry run")
 }
 
 func replace(cmd *cobra.Command, args []string) error {
@@ -60,6 +63,8 @@ func replace(cmd *cobra.Command, args []string) error {
 	basedir := filepath.Dir(dir)
 	base := filepath.Base(dir)
 	bfs := osfs.New(basedir, osfs.WithBoundOS())
+
+	outfiles := map[string]string{}
 
 	err := billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -89,13 +94,23 @@ func replace(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 		}
 
-		enc := yaml.NewEncoder(cmd.OutOrStdout())
+		buf := strings.Builder{}
+		enc := yaml.NewEncoder(&buf)
 		enc.SetIndent(2)
 		enc.Encode(&wflow)
+		enc.Close()
+
+		outfiles[path] = buf.String()
+
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	processOutput(cmd, bfs, outfiles)
+
+	return nil
 }
 
 func traverseYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) error {
@@ -156,4 +171,35 @@ func shouldSkipFile(info fs.FileInfo) bool {
 	}
 
 	return false
+}
+
+func processOutput(cmd *cobra.Command, bfs billy.Filesystem, outfiles map[string]string) error {
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("failed to get dry-run flag: %w", err)
+	}
+
+	var out io.Writer
+
+	for path, content := range outfiles {
+		if dryRun {
+			out = cmd.OutOrStdout()
+		} else {
+			f, err := bfs.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0644)
+			if err != nil {
+				return fmt.Errorf("failed to open file %s: %w", path, err)
+			}
+
+			defer f.Close()
+
+			out = f
+		}
+
+		_, err := fmt.Fprintf(out, "%s", content)
+		if err != nil {
+			return fmt.Errorf("failed to write to file %s: %w", path, err)
+		}
+	}
+
+	return nil
 }
