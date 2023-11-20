@@ -18,10 +18,13 @@ package ghactions
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/go-git/go-billy/v5/osfs"
+	billyutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -54,16 +57,22 @@ func replace(cmd *cobra.Command, args []string) error {
 		ghcli = ghcli.WithAuthToken(tok)
 	}
 
-	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+	basedir := filepath.Dir(dir)
+	base := filepath.Base(dir)
+	bfs := osfs.New(basedir, osfs.WithBoundOS())
+
+	err := billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
+			fmt.Printf("failed to walk path %s: %v\n", path, err)
 			return nil
 		}
 
-		if shouldSkipFile(d) {
+		if shouldSkipFile(info) {
+			fmt.Printf("skipping file %s\n", path)
 			return nil
 		}
 
-		f, err := os.Open(path)
+		f, err := bfs.Open(path)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s: %w", path, err)
 		}
@@ -105,6 +114,11 @@ func traverseYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) er
 		if foundUses {
 			foundUses = false
 
+			// If the value is a local path, skip it
+			if ghactions.IsLocal(v.Value) {
+				continue
+			}
+
 			act, ref, err := ghactions.ParseActionReference(v.Value)
 			if err != nil {
 				return fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
@@ -130,14 +144,14 @@ func traverseYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) er
 	return nil
 }
 
-func shouldSkipFile(d os.DirEntry) bool {
+func shouldSkipFile(info fs.FileInfo) bool {
 	// skip if not a file
-	if !d.Type().IsRegular() {
+	if info.IsDir() {
 		return true
 	}
 
 	// skip if not a .yml or .yaml file
-	if !strings.HasSuffix(d.Name(), ".yml") && !strings.HasSuffix(d.Name(), ".yaml") {
+	if !strings.HasSuffix(info.Name(), ".yml") && !strings.HasSuffix(info.Name(), ".yaml") {
 		return true
 	}
 

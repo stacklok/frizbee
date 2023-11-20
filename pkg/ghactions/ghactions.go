@@ -25,6 +25,11 @@ import (
 	"github.com/google/go-github/v56/github"
 )
 
+// IsLocal returns true if the input is a local path.
+func IsLocal(input string) bool {
+	return strings.HasPrefix(input, "./") || strings.HasPrefix(input, "../")
+}
+
 // ParseActionReference parses an action reference into action and reference.
 func ParseActionReference(input string) (action string, reference string, err error) {
 	frags := strings.Split(input, "@")
