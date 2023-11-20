@@ -59,6 +59,10 @@ func doGetReference(ctx context.Context, ghcli *github.Client, path string) (str
 	var t *github.Reference
 	resp, err := ghcli.Do(ctx, req, &t)
 	if err != nil && resp.StatusCode != http.StatusNotFound {
+		if err != nil && strings.Contains(err.Error(), "cannot unmarshal array into Go value of type") {
+			// This is a branch, not a tag
+			return "", nil
+		}
 		return "", fmt.Errorf("failed to do API request: %w", err)
 	} else if resp.StatusCode == http.StatusNotFound {
 		// No error, but no tag found

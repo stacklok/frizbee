@@ -5,3 +5,7 @@ tasks:
   test:
     cmds:
       - go test -v ./...
+
+  build:
+    cmds:
+      - go build -o ./bin/ ./...

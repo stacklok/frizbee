@@ -192,6 +192,14 @@ func TestGetChecksum(t *testing.T) {
 			want:    "",
 			wantErr: true,
 		},
+		{
+			name: "bufbuild/buf-setup-action with v1 is an array",
+			args: args{
+				action: "bufbuild/buf-setup-action",
+				ref:    "v1",
+			},
+			want: "asdfas",
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
