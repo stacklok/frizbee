@@ -83,6 +83,7 @@ linters:
     - dogsled
     - dupl
     - errname
+    - exportloopref
 
 issues:
   exclude-use-default: false
