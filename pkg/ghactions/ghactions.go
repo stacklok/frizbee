@@ -124,3 +124,61 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 	}
 	return modified, nil
 }
+
+// Action represents an action reference.
+type Action struct {
+	Owner string
+	Repo  string
+	Ref   string
+}
+
+// ListActionsInYAML returns a list of actions referenced in the given YAML structure.
+func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
+	var uses []Action
+	foundUses := false
+
+	for _, v := range node.Content {
+		if v.Value == "uses" {
+			foundUses = true
+			continue
+		}
+
+		if foundUses {
+			foundUses = false
+			a, err := parseValue(v.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
+			}
+
+			uses = append(uses, *a)
+			continue
+		}
+
+		// Otherwise recursively look more
+		childUses, err := ListActionsInYAML(v)
+		if err != nil {
+			return nil, err
+		}
+		uses = append(uses, childUses...)
+	}
+
+	return uses, nil
+}
+
+func parseValue(val string) (*Action, error) {
+	action, ref, err := ParseActionReference(val)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse action reference '%s': %w", val, err)
+	}
+
+	owner, repo, err := parseActionFragments(action)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse action fragments '%s': %w", action, err)
+	}
+
+	return &Action{
+		Owner: owner,
+		Repo:  repo,
+		Ref:   ref,
+	}, nil
+}
