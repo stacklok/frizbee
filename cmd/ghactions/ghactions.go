@@ -27,8 +27,18 @@ import (
 // CmdGHActions represents the ghactions command
 func CmdGHActions() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "ghactions",
-		Short:        "Replace tags in GitHub Actions workflows",
+		Use:   "ghactions",
+		Short: "Replace tags in GitHub Actions workflows",
+		Long: `This utility replaces tag or branch references in GitHub Actions workflows
+with the latest commit hash of the referenced tag or branch.
+	
+Example:
+
+	$ boomerang ghactions -d .github/workflows
+
+This will replace all tag or branch references in all GitHub Actions workflows
+for the given directory.
+`,
 		RunE:         replace,
 		SilenceUsage: true,
 	}
