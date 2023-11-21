@@ -82,6 +82,10 @@ jobs:
           name: boomerang
           path: bin/
 
+      - name: Make boomerang executable
+        run: |-
+          chmod +x bin/boomerang
+
       - name: Bommerang
         run: |-
           bin/boomerang ghactions --dry-run --error
