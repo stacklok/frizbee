@@ -89,6 +89,7 @@ linters:
     - inamedparam
     - interfacebloat
     - makezero
+    - mirror
 
 issues:
   exclude-use-default: false
