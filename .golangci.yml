@@ -90,6 +90,7 @@ linters:
     - gochecknoinits
     - gochecksumtype
     - goprintffuncname
+    - importas
 
 issues:
   exclude-use-default: false
