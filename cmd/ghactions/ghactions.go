@@ -22,6 +22,8 @@ import (
 
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
+
+	"github.com/stacklok/frizbee/pkg/config"
 )
 
 // CmdGHActions represents the ghactions command
@@ -70,6 +72,10 @@ func replace(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get quiet flag: %w", err)
 	}
+	cfg, err := config.FromContext(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("failed to get config from context: %w", err)
+	}
 
 	// remove trailing / from dir. This doesn't play well with
 	// the go-billy filesystem and walker we use.
@@ -94,5 +100,5 @@ func replace(cmd *cobra.Command, _ []string) error {
 		errOnModified: errOnModified,
 	}
 
-	return replacer.do(ctx, cmd)
+	return replacer.do(ctx, cmd, cfg)
 }

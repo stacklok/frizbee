@@ -18,23 +18,52 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/cmd/ghactions"
+	"github.com/stacklok/frizbee/pkg/config"
 )
 
 // Execute runs the root command.
 func Execute() {
 	var rootCmd = &cobra.Command{
-		Use:   "frizbee",
-		Short: "frizbee is a tool you may throw a tag at and it comes back with a checksum",
+		Use:               "frizbee",
+		Short:             "frizbee is a tool you may throw a tag at and it comes back with a checksum",
+		PersistentPreRunE: prerun,
 	}
 
+	rootCmd.PersistentFlags().StringP("config", "c", ".frizbee.yml", "config file (default is .frizbee.yml)")
+
 	rootCmd.AddCommand(ghactions.CmdGHActions())
-	err := rootCmd.ExecuteContext(context.Background())
-	if err != nil {
+
+	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
 	}
+}
+
+func prerun(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+
+	cfg, err := readConfig(cmd)
+	if err != nil {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	ctx = context.WithValue(ctx, config.ContextConfigKey, cfg)
+
+	cmd.SetContext(ctx)
+
+	return nil
+}
+
+func readConfig(cmd *cobra.Command) (*config.Config, error) {
+	configFile, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config file: %w", err)
+	}
+
+	return config.ParseConfigFile(configFile)
 }
