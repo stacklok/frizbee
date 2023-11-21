@@ -56,10 +56,6 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 		}
 
-		if m {
-			r.log(cmd, "Modified %s\n", path)
-		}
-
 		modified = modified || m
 
 		buf, err := utils.YAMLToBuffer(wflow)
@@ -67,7 +63,10 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 			return fmt.Errorf("failed to convert YAML to buffer: %w", err)
 		}
 
-		outfiles[path] = buf.String()
+		if m {
+			r.log(cmd, "Modified %s\n", path)
+			outfiles[path] = buf.String()
+		}
 
 		return nil
 	})
