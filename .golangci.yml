@@ -87,6 +87,7 @@ linters:
     - forbidigo
     - forcetypeassert
     - gochecknoglobals
+    - gochecknoinits
 
 issues:
   exclude-use-default: false
