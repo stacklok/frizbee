@@ -91,6 +91,7 @@ linters:
     - makezero
     - mirror
     - noctx
+    - nosprintfhostport
 
 issues:
   exclude-use-default: false
