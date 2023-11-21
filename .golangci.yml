@@ -94,6 +94,7 @@ linters:
     - nosprintfhostport
     - perfsprint
     - tenv
+    - usestdlibvars
 
 issues:
   exclude-use-default: false
