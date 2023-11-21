@@ -87,6 +87,7 @@ linters:
     - goprintffuncname
     - importas
     - inamedparam
+    - interfacebloat
 
 issues:
   exclude-use-default: false
