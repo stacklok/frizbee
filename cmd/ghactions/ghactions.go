@@ -51,6 +51,7 @@ for the given directory.
 
 	// sub-commands
 	cmd.AddCommand(CmdOne())
+	cmd.AddCommand(CmdList())
 
 	return cmd
 }
