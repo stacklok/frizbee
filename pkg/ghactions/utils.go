@@ -34,7 +34,6 @@ type TraverseFunc func(path string, wflow *yaml.Node) error
 func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun TraverseFunc) error {
 	return billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			fmt.Printf("failed to walk path %s: %v\n", path, err)
 			return nil
 		}
 
