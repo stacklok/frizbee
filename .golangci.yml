@@ -90,6 +90,7 @@ linters:
     - interfacebloat
     - makezero
     - mirror
+    - noctx
 
 issues:
   exclude-use-default: false
