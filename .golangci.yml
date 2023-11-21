@@ -75,6 +75,7 @@ linters:
     - thelper
     - tparallel
     - asasalint
+    - asciicheck
 
 issues:
   exclude-use-default: false
