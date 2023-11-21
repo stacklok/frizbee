@@ -17,6 +17,7 @@ package ghactions_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/google/go-github/v56/github"
@@ -106,6 +107,8 @@ func TestParseActionReference(t *testing.T) {
 
 func TestGetChecksum(t *testing.T) {
 	t.Parallel()
+
+	tok := os.Getenv("GITHUB_TOKEN")
 
 	type args struct {
 		action string
@@ -222,6 +225,9 @@ func TestGetChecksum(t *testing.T) {
 			t.Parallel()
 
 			ghcli := github.NewClient(nil)
+			if tok != "" {
+				ghcli = ghcli.WithAuthToken(tok)
+			}
 			got, err := ghactions.GetChecksum(context.Background(), ghcli, tt.args.action, tt.args.ref)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
