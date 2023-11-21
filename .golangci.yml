@@ -79,6 +79,7 @@ linters:
     - bidichk
     - bodyclose
     - contextcheck
+    - decorder
 
 issues:
   exclude-use-default: false
