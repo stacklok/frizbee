@@ -21,9 +21,16 @@ jobs:
       - name: setup task
         uses: arduino/setup-task@e26d8975574116b0097a1161e0fe16ba75d84c1c # v1
 
+      # Builds the bin/boomerang binary
       - name: build
         run: |-
           task build
+
+      - name: upload artifact
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+        with:
+          name: boomerang
+          path: bin/boomerang
 
   lint:
     runs-on: ubuntu-latest
@@ -58,3 +65,27 @@ jobs:
           task test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Checks that the github workflows are valid using this same tool
+  boomerang:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      # Fetch boomerang artifact
+      - name: download artifact
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
+        with:
+          name: boomerang
+          path: bin/
+
+      - name: Make boomerang executable
+        run: |-
+          chmod +x bin/boomerang
+
+      - name: Bommerang
+        run: |-
+          bin/boomerang ghactions --dry-run --error
