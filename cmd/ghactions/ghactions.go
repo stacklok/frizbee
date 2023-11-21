@@ -43,10 +43,14 @@ for the given directory.
 		SilenceUsage: true,
 	}
 
+	// flags
 	cmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
 	cmd.Flags().BoolP("dry-run", "n", false, "don't modify files")
 	cmd.Flags().BoolP("quiet", "q", false, "don't print anything")
 	cmd.Flags().BoolP("error", "e", false, "exit with error code if any file is modified")
+
+	// sub-commands
+	cmd.AddCommand(CmdOne())
 
 	return cmd
 }
