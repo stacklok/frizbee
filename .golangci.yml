@@ -86,6 +86,7 @@ linters:
     - gochecksumtype
     - goprintffuncname
     - importas
+    - inamedparam
 
 issues:
   exclude-use-default: false
