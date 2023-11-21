@@ -76,6 +76,7 @@ linters:
     - tparallel
     - asasalint
     - asciicheck
+    - bidichk
 
 issues:
   exclude-use-default: false
