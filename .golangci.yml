@@ -92,6 +92,7 @@ linters:
     - mirror
     - noctx
     - nosprintfhostport
+    - perfsprint
 
 issues:
   exclude-use-default: false
