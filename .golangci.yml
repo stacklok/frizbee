@@ -88,6 +88,7 @@ linters:
     - importas
     - inamedparam
     - interfacebloat
+    - makezero
 
 issues:
   exclude-use-default: false
