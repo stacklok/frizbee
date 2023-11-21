@@ -82,6 +82,7 @@ linters:
     - decorder
     - dogsled
     - dupl
+    - errname
 
 issues:
   exclude-use-default: false
