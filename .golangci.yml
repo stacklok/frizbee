@@ -49,26 +49,6 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - errcheck
-    - gosimple
-    - lll
-    - exhaustive
-    - goconst
-    - gocyclo
-    - gofmt
-    - gosec
-    - gci
-    - unparam
-    - gosimple
-    - govet
-    - ineffassign
-    - paralleltest
-    - promlinter
-    - revive
-    - staticcheck
-    - unused
-    - thelper
-    - tparallel
     - asasalint
     - asciicheck
     - bidichk
@@ -77,23 +57,43 @@ linters:
     - decorder
     - dogsled
     - dupl
+    - errcheck
     - errname
+    - exhaustive
     - exportloopref
     - forbidigo
     - forcetypeassert
+    - gci
     - gochecknoglobals
     - gochecknoinits
     - gochecksumtype
+    - goconst
+    - gocyclo
+    - gofmt
     - goprintffuncname
+    - gosec
+    - gosimple
+    - gosimple
+    - govet
     - importas
     - inamedparam
+    - ineffassign
     - interfacebloat
+    - lll
     - makezero
     - mirror
     - noctx
     - nosprintfhostport
+    - paralleltest
     - perfsprint
+    - promlinter
+    - revive
+    - staticcheck
     - tenv
+    - thelper
+    - tparallel
+    - unparam
+    - unused
     - usestdlibvars
 
 issues:
