@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-github/v56/github"
 	"github.com/stretchr/testify/require"
 
-	"github.com/stacklok/boomerang/pkg/ghactions"
+	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
 func TestParseActionReference(t *testing.T) {

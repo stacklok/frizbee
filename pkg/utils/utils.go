@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package utils provides utilities for boomerang
+// Package utils provides utilities for frizbee
 package utils
 
 import (

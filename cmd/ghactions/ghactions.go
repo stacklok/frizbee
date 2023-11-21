@@ -34,7 +34,7 @@ with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ boomerang ghactions -d .github/workflows
+	$ frizbee ghactions -d .github/workflows
 
 This will replace all tag or branch references in all GitHub Actions workflows
 for the given directory.

@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/stacklok/boomerang/pkg/ghactions"
-	"github.com/stacklok/boomerang/pkg/utils"
+	"github.com/stacklok/frizbee/pkg/ghactions"
+	"github.com/stacklok/frizbee/pkg/utils"
 )
 
 type replacer struct {

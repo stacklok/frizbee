@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cmd provides the boomerang command line interface.
+// Package cmd provides the frizbee command line interface.
 package cmd
 
 import (
@@ -22,14 +22,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/stacklok/boomerang/cmd/ghactions"
+	"github.com/stacklok/frizbee/cmd/ghactions"
 )
 
 // Execute runs the root command.
 func Execute() {
 	var rootCmd = &cobra.Command{
-		Use:   "boomerang",
-		Short: "boomerang is a tool you may throw a tag at and it comes back with a checksum",
+		Use:   "frizbee",
+		Short: "frizbee is a tool you may throw a tag at and it comes back with a checksum",
 	}
 
 	rootCmd.AddCommand(ghactions.CmdGHActions())

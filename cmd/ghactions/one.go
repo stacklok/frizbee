@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 
-	"github.com/stacklok/boomerang/pkg/ghactions"
+	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
 // CmdOne represents the one sub-command
@@ -35,7 +35,7 @@ with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ boomerang ghactions one actions/checkout@v4.1.1
+	$ frizbee ghactions one actions/checkout@v4.1.1
 
 This will replace the tag or branch reference for the commit hash of the
 referenced tag or branch.
