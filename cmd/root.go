@@ -25,13 +25,13 @@ import (
 	"github.com/stacklok/boomerang/cmd/ghactions"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "boomerang",
-	Short: "boomerang is a tool you may throw a tag at and it comes back with a checksum",
-}
-
 // Execute runs the root command.
 func Execute() {
+	var rootCmd = &cobra.Command{
+		Use:   "boomerang",
+		Short: "boomerang is a tool you may throw a tag at and it comes back with a checksum",
+	}
+
 	rootCmd.AddCommand(ghactions.CmdGHActions())
 	err := rootCmd.ExecuteContext(context.Background())
 	if err != nil {

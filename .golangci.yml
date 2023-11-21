@@ -86,6 +86,7 @@ linters:
     - exportloopref
     - forbidigo
     - forcetypeassert
+    - gochecknoglobals
 
 issues:
   exclude-use-default: false
