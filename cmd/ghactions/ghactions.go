@@ -56,6 +56,12 @@ func replace(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get quiet flag: %w", err)
 	}
 
+	// remove trailing / from dir. This doesn't play well with
+	// the go-billy filesystem and walker we use.
+	if dir[len(dir)-1] == '/' {
+		dir = dir[:len(dir)-1]
+	}
+
 	ctx := cmd.Context()
 
 	ghcli := github.NewClient(nil)
