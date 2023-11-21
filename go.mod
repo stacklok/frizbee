@@ -1,4 +1,4 @@
-module github.com/stacklok/frisbee
+module github.com/stacklok/boomerang
 
 go 1.21.3
 

@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/stacklok/frisbee/pkg/ghactions"
+	"github.com/stacklok/boomerang/pkg/ghactions"
 )
 
 // replaceCmd represents the replace command

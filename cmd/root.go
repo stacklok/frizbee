@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cmd provides the frisbee command line interface.
+// Package cmd provides the boomerang command line interface.
 package cmd
 
 import (
@@ -22,12 +22,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/stacklok/frisbee/cmd/ghactions"
+	"github.com/stacklok/boomerang/cmd/ghactions"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "frisbee",
-	Short: "frisbee is a tool you may throw a tag at and it comes back with a checksum",
+	Use:   "boomerang",
+	Short: "boomerang is a tool you may throw a tag at and it comes back with a checksum",
 }
 
 // Execute runs the root command.
