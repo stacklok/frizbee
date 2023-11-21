@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// GHActionsCmd represents the ghactions command
-func GHActionsCmd() *cobra.Command {
+// CmdGHActions represents the ghactions command
+func CmdGHActions() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "ghactions",
 		Short:        "Replace tags in GitHub Actions workflows",
@@ -41,7 +41,7 @@ func GHActionsCmd() *cobra.Command {
 	return cmd
 }
 
-func replace(cmd *cobra.Command, args []string) error {
+func replace(cmd *cobra.Command, _ []string) error {
 	dir := cmd.Flag("dir").Value.String()
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {

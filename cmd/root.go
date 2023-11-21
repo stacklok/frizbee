@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 
 // Execute runs the root command.
 func Execute() {
-	rootCmd.AddCommand(ghactions.GHActionsCmd())
+	rootCmd.AddCommand(ghactions.CmdGHActions())
 	err := rootCmd.ExecuteContext(context.Background())
 	if err != nil {
 		os.Exit(1)

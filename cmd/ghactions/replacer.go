@@ -75,7 +75,9 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 		return err
 	}
 
-	r.processOutput(cmd, bfs, outfiles)
+	if err := r.processOutput(cmd, bfs, outfiles); err != nil {
+		return err
+	}
 
 	if r.errOnModified && modified {
 		return fmt.Errorf("modified files")

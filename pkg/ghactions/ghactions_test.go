@@ -26,6 +26,8 @@ import (
 )
 
 func TestParseActionReference(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		input string
 	}
@@ -88,6 +90,8 @@ func TestParseActionReference(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			gotact, gotref, err := ghactions.ParseActionReference(tt.args.input)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
@@ -101,6 +105,8 @@ func TestParseActionReference(t *testing.T) {
 }
 
 func TestGetChecksum(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		action string
 		ref    string
@@ -213,6 +219,8 @@ func TestGetChecksum(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ghcli := github.NewClient(nil)
 			got, err := ghactions.GetChecksum(context.Background(), ghcli, tt.args.action, tt.args.ref)
 			if tt.wantErr {

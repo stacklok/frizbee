@@ -9,3 +9,7 @@ tasks:
   build:
     cmds:
       - go build -o ./bin/ ./...
+
+  lint:
+    cmds:
+      - golangci-lint run --timeout 5m0s --config .golangci.yml
