@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v56/github"
+	"gopkg.in/yaml.v3"
 )
 
 // IsLocal returns true if the input is a local path.
@@ -68,4 +69,58 @@ func GetChecksum(ctx context.Context, ghcli *github.Client, action, ref string) 
 	}
 
 	return ref, nil
+}
+
+// ModifyReferencesInYAML takes the given YAML structure and replaces
+// all references to tags with the checksum of the tag.
+// Note that the given YAML structure is modified in-place.
+// The function returns true if any references were modified.
+func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) (bool, error) {
+	// `uses` will be immediately before the action
+	// name in the YAML `Content` array. We use a toggle
+	// to track if we've found `uses` and then look for
+	// the next node.
+	foundUses := false
+	modified := false
+
+	for _, v := range node.Content {
+		if v.Value == "uses" {
+			foundUses = true
+			continue
+		}
+
+		if foundUses {
+			foundUses = false
+
+			// If the value is a local path, skip it
+			if IsLocal(v.Value) {
+				continue
+			}
+
+			act, ref, err := ParseActionReference(v.Value)
+			if err != nil {
+				return modified, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
+			}
+
+			sum, err := GetChecksum(ctx, ghcli, act, ref)
+			if err != nil {
+				return modified, fmt.Errorf("failed to get checksum for action '%s': %w", v.Value, err)
+			}
+
+			if ref != sum {
+				v.SetString(fmt.Sprintf("%s@%s", act, sum))
+				v.LineComment = ref
+				modified = true
+			}
+			continue
+		}
+
+		// Otherwise recursively look more
+		m, err := ModifyReferencesInYAML(ctx, ghcli, v)
+		if err != nil {
+			return m, err
+		}
+		modified = modified || m
+	}
+	return modified, nil
 }

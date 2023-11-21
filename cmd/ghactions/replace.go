@@ -16,22 +16,19 @@
 package ghactions
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
-	billyutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/boomerang/pkg/ghactions"
+	"github.com/stacklok/boomerang/pkg/utils"
 )
 
 // replaceCmd represents the replace command
@@ -66,39 +63,16 @@ func replace(cmd *cobra.Command, args []string) error {
 
 	outfiles := map[string]string{}
 
-	err := billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			fmt.Printf("failed to walk path %s: %v\n", path, err)
-			return nil
-		}
-
-		if shouldSkipFile(info) {
-			fmt.Printf("skipping file %s\n", path)
-			return nil
-		}
-
-		f, err := bfs.Open(path)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", path, err)
-		}
-		defer f.Close()
-
-		dec := yaml.NewDecoder(f)
-
-		var wflow yaml.Node
-		if err := dec.Decode(&wflow); err != nil {
-			return fmt.Errorf("failed to decode file %s: %w", path, err)
-		}
-
-		if err := traverseYAML(ctx, ghcli, &wflow); err != nil {
+	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
+		fmt.Fprintf(cmd.ErrOrStderr(), "Processing %s\n", path)
+		if _, err := ghactions.ModifyReferencesInYAML(ctx, ghcli, wflow); err != nil {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 		}
 
-		buf := strings.Builder{}
-		enc := yaml.NewEncoder(&buf)
-		enc.SetIndent(2)
-		enc.Encode(&wflow)
-		enc.Close()
+		buf, err := utils.YAMLToBuffer(wflow)
+		if err != nil {
+			return fmt.Errorf("failed to convert YAML to buffer: %w", err)
+		}
 
 		outfiles[path] = buf.String()
 
@@ -111,66 +85,6 @@ func replace(cmd *cobra.Command, args []string) error {
 	processOutput(cmd, bfs, outfiles)
 
 	return nil
-}
-
-func traverseYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) error {
-	// `uses` will be immediately before the action
-	// name in the YAML `Content` array. We use a toggle
-	// to track if we've found `uses` and then look for
-	// the next node.
-	foundUses := false
-
-	for _, v := range node.Content {
-		if v.Value == "uses" {
-			foundUses = true
-			continue
-		}
-
-		if foundUses {
-			foundUses = false
-
-			// If the value is a local path, skip it
-			if ghactions.IsLocal(v.Value) {
-				continue
-			}
-
-			act, ref, err := ghactions.ParseActionReference(v.Value)
-			if err != nil {
-				return fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
-			}
-
-			sum, err := ghactions.GetChecksum(ctx, ghcli, act, ref)
-			if err != nil {
-				return fmt.Errorf("failed to get checksum for action '%s': %w", v.Value, err)
-			}
-
-			if ref != sum {
-				v.SetString(fmt.Sprintf("%s@%s", act, sum))
-				v.LineComment = ref
-			}
-			continue
-		}
-
-		// Otherwise recursively look more
-		if err := traverseYAML(ctx, ghcli, v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func shouldSkipFile(info fs.FileInfo) bool {
-	// skip if not a file
-	if info.IsDir() {
-		return true
-	}
-
-	// skip if not a .yml or .yaml file
-	if !strings.HasSuffix(info.Name(), ".yml") && !strings.HasSuffix(info.Name(), ".yaml") {
-		return true
-	}
-
-	return false
 }
 
 func processOutput(cmd *cobra.Command, bfs billy.Filesystem, outfiles map[string]string) error {
