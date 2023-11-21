@@ -80,7 +80,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: boomerang
-          path: bin/boomerang
+          path: bin/
 
       - name: Bommerang
         run: |-
