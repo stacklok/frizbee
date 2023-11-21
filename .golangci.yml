@@ -78,6 +78,7 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
+    - contextcheck
 
 issues:
   exclude-use-default: false
