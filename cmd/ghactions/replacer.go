@@ -106,7 +106,11 @@ func (r *replacer) processOutput(cmd *cobra.Command, bfs billy.Filesystem, outfi
 				return fmt.Errorf("failed to open file %s: %w", path, err)
 			}
 
-			defer f.Close()
+			defer func() {
+				if err := f.Close(); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "failed to close file %s: %v", path, err)
+				}
+			}()
 
 			out = f
 		}

@@ -31,6 +31,8 @@ func YAMLToBuffer(wflow *yaml.Node) (fmt.Stringer, error) {
 	if err := enc.Encode(wflow); err != nil {
 		return nil, fmt.Errorf("failed to encode YAML: %w", err)
 	}
+
+	// nolint:errcheck // ignore error
 	defer enc.Close()
 
 	return &buf, nil

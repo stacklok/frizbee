@@ -46,6 +46,8 @@ func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun Traver
 		if err != nil {
 			return fmt.Errorf("failed to open file %s: %w", path, err)
 		}
+
+		// nolint:errcheck // ignore error
 		defer f.Close()
 
 		dec := yaml.NewDecoder(f)
