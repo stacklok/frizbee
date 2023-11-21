@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/ghactions"
 	"github.com/stacklok/frizbee/pkg/utils"
 )
@@ -41,7 +42,7 @@ type replacer struct {
 	errOnModified bool
 }
 
-func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
+func (r *replacer) do(ctx context.Context, cmd *cobra.Command, cfg *config.Config) error {
 	basedir := filepath.Dir(r.dir)
 	base := filepath.Base(r.dir)
 	bfs := osfs.New(basedir, osfs.WithBoundOS())
@@ -51,7 +52,7 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
 		r.logf(cmd, "Processing %s\n", path)
-		m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow)
+		m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow, &cfg.GHActions)
 		if err != nil {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 		}

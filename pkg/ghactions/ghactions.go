@@ -24,6 +24,8 @@ import (
 
 	"github.com/google/go-github/v56/github"
 	"gopkg.in/yaml.v3"
+
+	"github.com/stacklok/frizbee/pkg/config"
 )
 
 // IsLocal returns true if the input is a local path.
@@ -75,7 +77,7 @@ func GetChecksum(ctx context.Context, ghcli *github.Client, action, ref string) 
 // all references to tags with the checksum of the tag.
 // Note that the given YAML structure is modified in-place.
 // The function returns true if any references were modified.
-func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node) (bool, error) {
+func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node, cfg *config.GHActions) (bool, error) {
 	// `uses` will be immediately before the action
 	// name in the YAML `Content` array. We use a toggle
 	// to track if we've found `uses` and then look for
@@ -94,6 +96,10 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 
 			// If the value is a local path, skip it
 			if IsLocal(v.Value) {
+				continue
+			}
+
+			if shouldExclude(cfg, v.Value) {
 				continue
 			}
 
@@ -116,7 +122,7 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 		}
 
 		// Otherwise recursively look more
-		m, err := ModifyReferencesInYAML(ctx, ghcli, v)
+		m, err := ModifyReferencesInYAML(ctx, ghcli, v, cfg)
 		if err != nil {
 			return m, err
 		}
@@ -181,4 +187,13 @@ func parseValue(val string) (*Action, error) {
 		Repo:  repo,
 		Ref:   ref,
 	}, nil
+}
+
+func shouldExclude(cfg *config.GHActions, input string) bool {
+	for _, e := range cfg.Exclude {
+		if e == input {
+			return true
+		}
+	}
+	return false
 }
