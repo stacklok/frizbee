@@ -93,6 +93,7 @@ linters:
     - noctx
     - nosprintfhostport
     - perfsprint
+    - tenv
 
 issues:
   exclude-use-default: false
