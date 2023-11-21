@@ -13,9 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package ghactions provides command-line utilities to work with GitHub Actions.
 package ghactions
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -31,43 +33,34 @@ import (
 	"github.com/stacklok/boomerang/pkg/utils"
 )
 
-// replaceCmd represents the replace command
-var replaceCmd = &cobra.Command{
-	Use:   "replace",
-	Short: "Replace tags in GitHub Actions workflows",
-	RunE:  replace,
+type replacer struct {
+	ghcli         *github.Client
+	dir           string
+	dryRun        bool
+	quiet         bool
+	errOnModified bool
 }
 
-func init() {
-	GHActionsCmd.AddCommand(replaceCmd)
-
-	replaceCmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
-	replaceCmd.Flags().BoolP("dry-run", "n", false, "dry run")
-}
-
-func replace(cmd *cobra.Command, args []string) error {
-	dir := cmd.Flag("dir").Value.String()
-
-	ctx := cmd.Context()
-
-	ghcli := github.NewClient(nil)
-
-	tok := os.Getenv("GITHUB_TOKEN")
-	if tok != "" {
-		ghcli = ghcli.WithAuthToken(tok)
-	}
-
-	basedir := filepath.Dir(dir)
-	base := filepath.Base(dir)
+func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
+	basedir := filepath.Dir(r.dir)
+	base := filepath.Base(r.dir)
 	bfs := osfs.New(basedir, osfs.WithBoundOS())
 
 	outfiles := map[string]string{}
+	modified := false
 
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Processing %s\n", path)
-		if _, err := ghactions.ModifyReferencesInYAML(ctx, ghcli, wflow); err != nil {
+		r.log(cmd, "Processing %s\n", path)
+		m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow)
+		if err != nil {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 		}
+
+		if m {
+			r.log(cmd, "Modified %s\n", path)
+		}
+
+		modified = modified || m
 
 		buf, err := utils.YAMLToBuffer(wflow)
 		if err != nil {
@@ -82,21 +75,29 @@ func replace(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	processOutput(cmd, bfs, outfiles)
+	r.processOutput(cmd, bfs, outfiles)
+
+	if r.errOnModified && modified {
+		return fmt.Errorf("modified files")
+	}
 
 	return nil
 }
 
-func processOutput(cmd *cobra.Command, bfs billy.Filesystem, outfiles map[string]string) error {
-	dryRun, err := cmd.Flags().GetBool("dry-run")
-	if err != nil {
-		return fmt.Errorf("failed to get dry-run flag: %w", err)
+func (r *replacer) log(cmd *cobra.Command, format string, args ...interface{}) {
+	if !r.quiet {
+		fmt.Fprintf(cmd.ErrOrStderr(), format, args...)
 	}
+}
+
+func (r *replacer) processOutput(cmd *cobra.Command, bfs billy.Filesystem, outfiles map[string]string) error {
 
 	var out io.Writer
 
 	for path, content := range outfiles {
-		if dryRun {
+		if r.quiet {
+			out = io.Discard
+		} else if r.dryRun {
 			out = cmd.OutOrStdout()
 		} else {
 			f, err := bfs.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0644)

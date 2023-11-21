@@ -17,11 +17,58 @@
 package ghactions
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 )
 
 // GHActionsCmd represents the ghactions command
 var GHActionsCmd = &cobra.Command{
 	Use:   "ghactions",
-	Short: "Utilities to work with GitHub Actions",
+	Short: "Replace tags in GitHub Actions workflows",
+	RunE:  replace,
+}
+
+func init() {
+	GHActionsCmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
+	GHActionsCmd.Flags().BoolP("dry-run", "n", false, "dry run")
+	GHActionsCmd.Flags().BoolP("quiet", "q", false, "quiet")
+	GHActionsCmd.Flags().BoolP("error", "e", false, "exit with error code 1 if any file is modified")
+}
+
+func replace(cmd *cobra.Command, args []string) error {
+	dir := cmd.Flag("dir").Value.String()
+	dryRun, err := cmd.Flags().GetBool("dry-run")
+	if err != nil {
+		return fmt.Errorf("failed to get dry-run flag: %w", err)
+	}
+	errOnModified, err := cmd.Flags().GetBool("error")
+	if err != nil {
+		return fmt.Errorf("failed to get error flag: %w", err)
+	}
+	quiet, err := cmd.Flags().GetBool("quiet")
+	if err != nil {
+		return fmt.Errorf("failed to get quiet flag: %w", err)
+	}
+
+	ctx := cmd.Context()
+
+	ghcli := github.NewClient(nil)
+
+	tok := os.Getenv("GITHUB_TOKEN")
+	if tok != "" {
+		ghcli = ghcli.WithAuthToken(tok)
+	}
+
+	replacer := &replacer{
+		ghcli:         ghcli,
+		dir:           dir,
+		dryRun:        dryRun,
+		quiet:         quiet,
+		errOnModified: errOnModified,
+	}
+
+	return replacer.do(ctx, cmd)
 }
