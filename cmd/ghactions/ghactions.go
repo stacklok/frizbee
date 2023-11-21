@@ -25,17 +25,20 @@ import (
 )
 
 // GHActionsCmd represents the ghactions command
-var GHActionsCmd = &cobra.Command{
-	Use:   "ghactions",
-	Short: "Replace tags in GitHub Actions workflows",
-	RunE:  replace,
-}
+func GHActionsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "ghactions",
+		Short:        "Replace tags in GitHub Actions workflows",
+		RunE:         replace,
+		SilenceUsage: true,
+	}
 
-func init() {
-	GHActionsCmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
-	GHActionsCmd.Flags().BoolP("dry-run", "n", false, "dry run")
-	GHActionsCmd.Flags().BoolP("quiet", "q", false, "quiet")
-	GHActionsCmd.Flags().BoolP("error", "e", false, "exit with error code 1 if any file is modified")
+	cmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
+	cmd.Flags().BoolP("dry-run", "n", false, "don't modify files")
+	cmd.Flags().BoolP("quiet", "q", false, "don't print anything")
+	cmd.Flags().BoolP("error", "e", false, "exit with error code if any file is modified")
+
+	return cmd
 }
 
 func replace(cmd *cobra.Command, args []string) error {
