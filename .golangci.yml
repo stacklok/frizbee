@@ -88,6 +88,7 @@ linters:
     - forcetypeassert
     - gochecknoglobals
     - gochecknoinits
+    - gochecksumtype
 
 issues:
   exclude-use-default: false
