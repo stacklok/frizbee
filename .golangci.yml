@@ -81,6 +81,7 @@ linters:
     - contextcheck
     - decorder
     - dogsled
+    - dupl
 
 issues:
   exclude-use-default: false
