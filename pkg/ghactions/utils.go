@@ -39,7 +39,6 @@ func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun Traver
 		}
 
 		if shouldSkipFile(info) {
-			fmt.Printf("skipping file %s\n", path)
 			return nil
 		}
 
