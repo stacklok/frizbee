@@ -89,6 +89,7 @@ linters:
     - gochecknoglobals
     - gochecknoinits
     - gochecksumtype
+    - goprintffuncname
 
 issues:
   exclude-use-default: false

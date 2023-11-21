@@ -50,7 +50,7 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 	modified := false
 
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
-		r.log(cmd, "Processing %s\n", path)
+		r.logf(cmd, "Processing %s\n", path)
 		m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow)
 		if err != nil {
 			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
@@ -64,7 +64,7 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 		}
 
 		if m {
-			r.log(cmd, "Modified %s\n", path)
+			r.logf(cmd, "Modified %s\n", path)
 			outfiles[path] = buf.String()
 		}
 
@@ -85,7 +85,7 @@ func (r *replacer) do(ctx context.Context, cmd *cobra.Command) error {
 	return nil
 }
 
-func (r *replacer) log(cmd *cobra.Command, format string, args ...interface{}) {
+func (r *replacer) logf(cmd *cobra.Command, format string, args ...interface{}) {
 	if !r.quiet {
 		fmt.Fprintf(cmd.ErrOrStderr(), format, args...)
 	}
