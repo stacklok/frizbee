@@ -74,6 +74,7 @@ linters:
     - unused
     - thelper
     - tparallel
+    - asasalint
 
 issues:
   exclude-use-default: false
