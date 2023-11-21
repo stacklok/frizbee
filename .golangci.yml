@@ -80,6 +80,7 @@ linters:
     - bodyclose
     - contextcheck
     - decorder
+    - dogsled
 
 issues:
   exclude-use-default: false
