@@ -55,6 +55,7 @@ linters:
   disable-all: true
   enable:
     - errcheck
+    - gosimple
     - lll
     - exhaustive
     - goconst
