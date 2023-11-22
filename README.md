@@ -1,4 +1,4 @@
-# Frisbee
+# Frizbee
 
 frizbee is a tool you may throw a tag at and it comes back with a checksum.
 
