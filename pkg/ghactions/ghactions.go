@@ -20,8 +20,11 @@ package ghactions
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/google/go-github/v56/github"
 	"gopkg.in/yaml.v3"
 
@@ -140,8 +143,8 @@ type Action struct {
 }
 
 // ListActionsInYAML returns a list of actions referenced in the given YAML structure.
-func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
-	var uses []Action
+func setOfActions(node *yaml.Node) (mapset.Set[Action], error) {
+	actions := mapset.NewSet[Action]()
 	foundUses := false
 
 	for _, v := range node.Content {
@@ -157,19 +160,60 @@ func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
 				return nil, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
 			}
 
-			uses = append(uses, *a)
+			actions.Add(*a)
 			continue
 		}
 
 		// Otherwise recursively look more
-		childUses, err := ListActionsInYAML(v)
+		childUses, err := setOfActions(v)
 		if err != nil {
 			return nil, err
 		}
-		uses = append(uses, childUses...)
+		actions = actions.Union(childUses)
 	}
 
-	return uses, nil
+	return actions, nil
+}
+
+// ListActionsInYAML returns a list of actions referenced in the given YAML structure.
+func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
+	// just convert the set to a slice
+	actions, err := setOfActions(node)
+	if err != nil {
+		return nil, err
+	}
+
+	return setAsSlice[Action](actions), nil
+}
+
+// ListActionsInDirectory returns a list of actions referenced in the given directory.
+func ListActionsInDirectory(dir string) ([]Action, error) {
+	base := filepath.Base(dir)
+	bfs := osfs.New(filepath.Dir(dir), osfs.WithBoundOS())
+	actions := mapset.NewSet[Action]()
+
+	err := TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
+		wfActions, err := setOfActions(wflow)
+		if err != nil {
+			return fmt.Errorf("failed to get actions from YAML file %s: %w", path, err)
+		}
+
+		actions = actions.Union(wfActions)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return setAsSlice[Action](actions), nil
+}
+
+func setAsSlice[T comparable](s mapset.Set[T]) []T {
+	res := make([]T, 0, s.Cardinality())
+	for item := range s.Iter() {
+		res = append(res, item) // Type assertion to T
+	}
+	return res
 }
 
 func parseValue(val string) (*Action, error) {

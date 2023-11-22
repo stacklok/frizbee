@@ -18,11 +18,8 @@ package ghactions
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 
-	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/pkg/ghactions"
 )
@@ -49,21 +46,9 @@ Example:
 func list(cmd *cobra.Command, _ []string) error {
 	dir := cmd.Flag("dir").Value.String()
 
-	base := filepath.Base(dir)
-	bfs := osfs.New(filepath.Dir(dir), osfs.WithBoundOS())
-	actions := []ghactions.Action{}
-
-	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
-		wfActions, err := ghactions.ListActionsInYAML(wflow)
-		if err != nil {
-			return fmt.Errorf("failed to get actions from YAML file %s: %w", path, err)
-		}
-		actions = append(actions, wfActions...)
-
-		return nil
-	})
+	actions, err := ghactions.ListActionsInDirectory(dir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list actions: %w", err)
 	}
 
 	jsonBytes, err := json.MarshalIndent(actions, "", "  ")
