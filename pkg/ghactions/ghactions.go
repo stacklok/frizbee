@@ -136,10 +136,10 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 
 // Action represents an action reference.
 type Action struct {
-	Action string
-	Owner  string
-	Repo   string
-	Ref    string
+	Action string `json:"action"`
+	Owner  string `json:"owner"`
+	Repo   string `json:"repo"`
+	Ref    string `json:"ref"`
 }
 
 // ListActionsInYAML returns a list of actions referenced in the given YAML structure.
