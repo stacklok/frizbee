@@ -1,8 +1,9 @@
 module github.com/stacklok/frizbee
 
-go 1.21.3
+go 1.21
 
 require (
+	github.com/deckarep/golang-set/v2 v2.3.1
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/spf13/cobra v1.8.0
@@ -13,7 +14,6 @@ require (
 require (
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
