@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/stacklok/frizbee/cmd/containerimage"
 	"github.com/stacklok/frizbee/cmd/ghactions"
 	"github.com/stacklok/frizbee/pkg/config"
 )
@@ -38,6 +39,7 @@ func Execute() {
 	rootCmd.PersistentFlags().StringP("config", "c", ".frizbee.yml", "config file (default is .frizbee.yml)")
 
 	rootCmd.AddCommand(ghactions.CmdGHActions())
+	rootCmd.AddCommand(containerimage.CmdContainerImage())
 
 	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
