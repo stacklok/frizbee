@@ -34,3 +34,7 @@ require (
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 )
+
+// github.com/docker/docker@v24.0.0+incompatible has vulnerabilities
+// it can be replaced with github.com/docker/docker@v24.0.7+incompatible
+replace github.com/docker/docker => github.com/docker/docker v24.0.7+incompatible
