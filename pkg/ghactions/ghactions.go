@@ -13,10 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ghactions provides functions to process action references and
-// replace tags for checksums in GitHub Actions workflows.  The functions
-// in this package are NOT thread-safe; for a given FS, only one thread
-// should update/scan the workflow configurations at a time.
+// Package ghactions provides functions to locate action references and
+// replace tags for checksums in GitHub Actions workflows.
 package ghactions
 
 import (
@@ -179,7 +177,6 @@ func setOfActions(node *yaml.Node) (mapset.Set[Action], error) {
 
 // ListActionsInYAML returns a list of actions referenced in the given YAML structure.
 func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
-	// just convert the set to a slice
 	actions, err := setOfActions(node)
 	if err != nil {
 		return nil, err
