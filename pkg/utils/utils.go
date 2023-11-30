@@ -18,8 +18,11 @@ package utils
 
 import (
 	"fmt"
+	"io/fs"
 	"strings"
 
+	"github.com/go-git/go-billy/v5"
+	billyutil "github.com/go-git/go-billy/v5/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,4 +39,33 @@ func YAMLToBuffer(wflow *yaml.Node) (fmt.Stringer, error) {
 	defer enc.Close()
 
 	return &buf, nil
+}
+
+// TraverseFunc is a function that gets called with each file in a directory.
+type TraverseFunc func(path string, info fs.FileInfo) error
+
+// Traverse traverses the given directory and calls the given function with each file.
+func Traverse(bfs billy.Filesystem, base string, fun TraverseFunc) error {
+	return billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		return fun(path, info)
+	})
+}
+
+// IsYAMLFile returns true if the given file is a YAML file.
+func IsYAMLFile(info fs.FileInfo) bool {
+	// skip if not a file
+	if info.IsDir() {
+		return false
+	}
+
+	// skip if not a .yml or .yaml file
+	if strings.HasSuffix(info.Name(), ".yml") || strings.HasSuffix(info.Name(), ".yaml") {
+		return true
+	}
+
+	return false
 }

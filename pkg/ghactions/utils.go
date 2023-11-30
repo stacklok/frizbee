@@ -18,26 +18,22 @@ package ghactions
 import (
 	"fmt"
 	"io/fs"
-	"strings"
 
 	"github.com/go-git/go-billy/v5"
-	billyutil "github.com/go-git/go-billy/v5/util"
 	"gopkg.in/yaml.v3"
+
+	"github.com/stacklok/frizbee/pkg/utils"
 )
 
-// TraverseFunc is a function that gets called with each file in a GitHub Actions workflow
+// TraverseGHWFunc is a function that gets called with each file in a GitHub Actions workflow
 // directory. It receives the path to the file and the parsed workflow.
-type TraverseFunc func(path string, wflow *yaml.Node) error
+type TraverseGHWFunc func(path string, wflow *yaml.Node) error
 
 // TraverseGitHubActionWorkflows traverses the GitHub Actions workflows in the given directory
 // and calls the given function with each workflow.
-func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun TraverseFunc) error {
-	return billyutil.Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-
-		if shouldSkipFile(info) {
+func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun TraverseGHWFunc) error {
+	return utils.Traverse(bfs, base, func(path string, info fs.FileInfo) error {
+		if !utils.IsYAMLFile(info) {
 			return nil
 		}
 
@@ -62,18 +58,4 @@ func TraverseGitHubActionWorkflows(bfs billy.Filesystem, base string, fun Traver
 
 		return nil
 	})
-}
-
-func shouldSkipFile(info fs.FileInfo) bool {
-	// skip if not a file
-	if info.IsDir() {
-		return true
-	}
-
-	// skip if not a .yml or .yaml file
-	if !strings.HasSuffix(info.Name(), ".yml") && !strings.HasSuffix(info.Name(), ".yaml") {
-		return true
-	}
-
-	return false
 }
