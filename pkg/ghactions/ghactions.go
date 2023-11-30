@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ghactions provides functions to replace tags for checksums
-// in GitHub Actions workflows.
+// Package ghactions provides functions to locate action references and
+// replace tags for checksums in GitHub Actions workflows.
 package ghactions
 
 import (
@@ -144,7 +144,7 @@ type Action struct {
 
 // ListActionsInYAML returns a list of actions referenced in the given YAML structure.
 func setOfActions(node *yaml.Node) (mapset.Set[Action], error) {
-	actions := mapset.NewSet[Action]()
+	actions := mapset.NewThreadUnsafeSet[Action]()
 	foundUses := false
 
 	for _, v := range node.Content {
@@ -177,20 +177,19 @@ func setOfActions(node *yaml.Node) (mapset.Set[Action], error) {
 
 // ListActionsInYAML returns a list of actions referenced in the given YAML structure.
 func ListActionsInYAML(node *yaml.Node) ([]Action, error) {
-	// just convert the set to a slice
 	actions, err := setOfActions(node)
 	if err != nil {
 		return nil, err
 	}
 
-	return setAsSlice[Action](actions), nil
+	return actions.ToSlice(), nil
 }
 
 // ListActionsInDirectory returns a list of actions referenced in the given directory.
 func ListActionsInDirectory(dir string) ([]Action, error) {
 	base := filepath.Base(dir)
 	bfs := osfs.New(filepath.Dir(dir), osfs.WithBoundOS())
-	actions := mapset.NewSet[Action]()
+	actions := mapset.NewThreadUnsafeSet[Action]()
 
 	err := TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
 		wfActions, err := setOfActions(wflow)
@@ -205,15 +204,7 @@ func ListActionsInDirectory(dir string) ([]Action, error) {
 		return nil, err
 	}
 
-	return setAsSlice[Action](actions), nil
-}
-
-func setAsSlice[T comparable](s mapset.Set[T]) []T {
-	res := make([]T, 0, s.Cardinality())
-	for item := range s.Iter() {
-		res = append(res, item) // Type assertion to T
-	}
-	return res
+	return actions.ToSlice(), nil
 }
 
 func parseValue(val string) (*Action, error) {
