@@ -40,17 +40,17 @@ func TestReplaceImageReference(t *testing.T) {
 version: v1
 services:
   - name: web
-    image: nginx:latest
+    image: nginx:1.25.3
   - name: localstack
-    image: localstack/localstack
+    image: localstack/localstack:3.0.2
 `,
 			expectedOutput: `
 version: v1
 services:
   - name: web
-    image: index.docker.io/library/nginx@sha256:10d1f5b58f74683ad34eb29287e07dab1e90f10af243f151bb50aa5dbb4d62ee  # latest
+    image: index.docker.io/library/nginx@sha256:10d1f5b58f74683ad34eb29287e07dab1e90f10af243f151bb50aa5dbb4d62ee  # 1.25.3
   - name: localstack
-    image: index.docker.io/localstack/localstack@sha256:9b89e7d3bd1b0869f58d9aff0bfad30b4e1c2491ece7a00fb0a7515530d69cf2  # latest
+    image: index.docker.io/localstack/localstack@sha256:e606c4421419030b12d63a59f1211f57f5b0fbf7e9ce769e6250ee62ff4f9293  # 3.0.2
 `,
 			modified: true,
 		},
