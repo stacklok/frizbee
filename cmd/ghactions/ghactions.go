@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 
+	"github.com/stacklok/frizbee/internal/ghrest"
 	"github.com/stacklok/frizbee/pkg/config"
 	cliutils "github.com/stacklok/frizbee/pkg/utils/cli"
 )
@@ -81,12 +81,7 @@ func replace(cmd *cobra.Command, _ []string) error {
 
 	ctx := cmd.Context()
 
-	ghcli := github.NewClient(nil)
-
-	tok := os.Getenv("GITHUB_TOKEN")
-	if tok != "" {
-		ghcli = ghcli.WithAuthToken(tok)
-	}
+	ghcli := ghrest.NewGhRest(os.Getenv("GITHUB_TOKEN"))
 
 	replacer := &replacer{
 		Replacer: cliutils.Replacer{
@@ -96,7 +91,7 @@ func replace(cmd *cobra.Command, _ []string) error {
 			ErrOnModified: errOnModified,
 			Cmd:           cmd,
 		},
-		ghcli: ghcli,
+		restIf: ghcli,
 	}
 
 	return replacer.do(ctx, cfg)

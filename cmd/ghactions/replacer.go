@@ -23,19 +23,19 @@ import (
 	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/google/go-github/v56/github"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/ghactions"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/utils"
 	cliutils "github.com/stacklok/frizbee/pkg/utils/cli"
 )
 
 type replacer struct {
 	cliutils.Replacer
-	ghcli *github.Client
+	restIf interfaces.REST
 }
 
 func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
@@ -54,7 +54,7 @@ func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
 		eg.Go(func() error {
 			r.Logf("Processing %s\n", path)
-			m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow, &cfg.GHActions)
+			m, err := ghactions.ModifyReferencesInYAML(ctx, r.restIf, wflow, &cfg.GHActions)
 			if err != nil {
 				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 			}

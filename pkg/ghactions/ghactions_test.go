@@ -20,9 +20,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v56/github"
 	"github.com/stretchr/testify/require"
 
+	"github.com/stacklok/frizbee/internal/ghrest"
 	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
@@ -224,10 +224,7 @@ func TestGetChecksum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ghcli := github.NewClient(nil)
-			if tok != "" {
-				ghcli = ghcli.WithAuthToken(tok)
-			}
+			ghcli := ghrest.NewGhRest(tok)
 			got, err := ghactions.GetChecksum(context.Background(), ghcli, tt.args.action, tt.args.ref)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
