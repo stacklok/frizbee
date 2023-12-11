@@ -7,8 +7,10 @@ require (
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/google/go-containerregistry v0.17.0
 	github.com/google/go-github/v56 v56.0.0
+	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
+	golang.org/x/sync v0.2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -31,6 +33,5 @@ require (
 	github.com/sirupsen/logrus v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
-	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 )

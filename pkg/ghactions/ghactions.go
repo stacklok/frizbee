@@ -29,6 +29,7 @@ import (
 
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/interfaces"
+	"github.com/stacklok/frizbee/pkg/utils"
 )
 
 // IsLocal returns true if the input is a local path.
@@ -81,6 +82,17 @@ func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string
 // Note that the given YAML structure is modified in-place.
 // The function returns true if any references were modified.
 func ModifyReferencesInYAML(ctx context.Context, restIf interfaces.REST, node *yaml.Node, cfg *config.GHActions) (bool, error) {
+	cache := utils.NewUnsafeCacher()
+	return ModifyReferencesInYAMLWithCache(ctx, restIf, node, cfg, cache)
+}
+
+// ModifyReferencesInYAMLWithCache takes the given YAML structure and replaces
+// all references to tags with the checksum of the tag.
+// Note that the given YAML structure is modified in-place.
+// The function returns true if any references were modified.
+// The function uses the provided cache to store the checksums.
+func ModifyReferencesInYAMLWithCache(
+	ctx context.Context, restIf interfaces.REST, node *yaml.Node, cfg *config.GHActions, cache utils.RefCacher) (bool, error) {
 	// `uses` will be immediately before the action
 	// name in the YAML `Content` array. We use a toggle
 	// to track if we've found `uses` and then look for
@@ -111,9 +123,18 @@ func ModifyReferencesInYAML(ctx context.Context, restIf interfaces.REST, node *y
 				return modified, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
 			}
 
-			sum, err := GetChecksum(ctx, restIf, act, ref)
-			if err != nil {
-				return modified, fmt.Errorf("failed to get checksum for action '%s': %w", v.Value, err)
+			var sum string
+
+			// Check if we have a cached value
+			if val, ok := cache.Load(v.Value); ok {
+				sum = val
+			} else {
+				sum, err = GetChecksum(ctx, restIf, act, ref)
+				if err != nil {
+					return modified, fmt.Errorf("failed to get checksum for action '%s': %w", v.Value, err)
+				}
+
+				cache.Store(v.Value, sum)
 			}
 
 			if ref != sum {
@@ -125,7 +146,7 @@ func ModifyReferencesInYAML(ctx context.Context, restIf interfaces.REST, node *y
 		}
 
 		// Otherwise recursively look more
-		m, err := ModifyReferencesInYAML(ctx, restIf, v, cfg)
+		m, err := ModifyReferencesInYAMLWithCache(ctx, restIf, v, cfg, cache)
 		if err != nil {
 			return m, err
 		}
