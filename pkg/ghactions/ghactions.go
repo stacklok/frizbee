@@ -25,10 +25,10 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/google/go-github/v56/github"
 	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 )
 
 // IsLocal returns true if the input is a local path.
@@ -47,13 +47,13 @@ func ParseActionReference(input string) (action string, reference string, err er
 }
 
 // GetChecksum returns the checksum for a given action and tag.
-func GetChecksum(ctx context.Context, ghcli *github.Client, action, ref string) (string, error) {
+func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string) (string, error) {
 	owner, repo, err := parseActionFragments(action)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := getCheckSumForTag(ctx, ghcli, owner, repo, ref)
+	res, err := getCheckSumForTag(ctx, restIf, owner, repo, ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to get checksum for tag: %w", err)
 	} else if res != "" {
@@ -61,7 +61,7 @@ func GetChecksum(ctx context.Context, ghcli *github.Client, action, ref string) 
 	}
 
 	// check branch
-	res, err = getCheckSumForBranch(ctx, ghcli, owner, repo, ref)
+	res, err = getCheckSumForBranch(ctx, restIf, owner, repo, ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to get checksum for branch: %w", err)
 	} else if res != "" {
@@ -80,7 +80,7 @@ func GetChecksum(ctx context.Context, ghcli *github.Client, action, ref string) 
 // all references to tags with the checksum of the tag.
 // Note that the given YAML structure is modified in-place.
 // The function returns true if any references were modified.
-func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yaml.Node, cfg *config.GHActions) (bool, error) {
+func ModifyReferencesInYAML(ctx context.Context, restIf interfaces.REST, node *yaml.Node, cfg *config.GHActions) (bool, error) {
 	// `uses` will be immediately before the action
 	// name in the YAML `Content` array. We use a toggle
 	// to track if we've found `uses` and then look for
@@ -111,7 +111,7 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 				return modified, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
 			}
 
-			sum, err := GetChecksum(ctx, ghcli, act, ref)
+			sum, err := GetChecksum(ctx, restIf, act, ref)
 			if err != nil {
 				return modified, fmt.Errorf("failed to get checksum for action '%s': %w", v.Value, err)
 			}
@@ -125,7 +125,7 @@ func ModifyReferencesInYAML(ctx context.Context, ghcli *github.Client, node *yam
 		}
 
 		// Otherwise recursively look more
-		m, err := ModifyReferencesInYAML(ctx, ghcli, v, cfg)
+		m, err := ModifyReferencesInYAML(ctx, restIf, v, cfg)
 		if err != nil {
 			return m, err
 		}

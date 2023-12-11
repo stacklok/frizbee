@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 
+	"github.com/stacklok/frizbee/internal/ghrest"
 	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
@@ -52,12 +52,7 @@ func replaceOne(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	ref := args[0]
 
-	ghcli := github.NewClient(nil)
-
-	tok := os.Getenv("GITHUB_TOKEN")
-	if tok != "" {
-		ghcli = ghcli.WithAuthToken(tok)
-	}
+	ghcli := ghrest.NewGhRest(os.Getenv("GITHUB_TOKEN"))
 
 	act, ref, err := ghactions.ParseActionReference(ref)
 	if err != nil {
