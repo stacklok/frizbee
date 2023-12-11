@@ -23,6 +23,8 @@ import (
 	"regexp"
 
 	"github.com/google/go-containerregistry/pkg/name"
+
+	"github.com/stacklok/frizbee/pkg/utils"
 )
 
 // ReplaceImageReferenceFromYAML replaces the image reference in the input text with the digest
@@ -32,6 +34,14 @@ func ReplaceImageReferenceFromYAML(ctx context.Context, input io.Reader, output 
 
 // ReplaceReferenceFromYAML replaces the image reference in the input text with the digest
 func ReplaceReferenceFromYAML(ctx context.Context, keyRegex string, input io.Reader, output io.Writer) (bool, error) {
+	cache := utils.NewUnsafeCacher()
+	return ReplaceReferenceFromYAMLWithCache(ctx, keyRegex, input, output, cache)
+}
+
+// ReplaceReferenceFromYAMLWithCache replaces the image reference in the input text with the digest
+// and uses the provided cache to store the digests.
+func ReplaceReferenceFromYAMLWithCache(
+	ctx context.Context, keyRegex string, input io.Reader, output io.Writer, cache utils.RefCacher) (bool, error) {
 	scanner := bufio.NewScanner(input)
 	re, err := regexp.Compile(fmt.Sprintf(`(\s*%s):\s*([^\s]+)`, keyRegex))
 	if err != nil {
@@ -54,9 +64,16 @@ func ReplaceReferenceFromYAML(ctx context.Context, keyRegex string, input io.Rea
 				return match
 			}
 
-			digest, err := GetDigestFromRef(ctx, ref)
-			if err != nil {
-				return match
+			var digest string
+			if d, ok := cache.Load(ref.Identifier()); ok {
+				digest = d
+			} else {
+				digest, err = GetDigestFromRef(ctx, ref)
+				if err != nil {
+					return match
+				}
+
+				cache.Store(ref.Identifier(), digest)
 			}
 
 			imgWithoutTag := ref.Context().Name()
