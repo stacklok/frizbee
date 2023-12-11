@@ -50,6 +50,7 @@ func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
 	modified.Store(false)
 
 	var eg errgroup.Group
+	cache := utils.NewRefCacher()
 
 	err := utils.Traverse(bfs, base, func(path string, info fs.FileInfo) error {
 		eg.Go(func() error {
@@ -68,7 +69,7 @@ func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
 			r.Logf("Processing %s\n", path)
 
 			buf := bytes.Buffer{}
-			m, err := containers.ReplaceReferenceFromYAML(ctx, r.imageRegex, f, &buf)
+			m, err := containers.ReplaceReferenceFromYAMLWithCache(ctx, r.imageRegex, f, &buf, cache)
 			if err != nil {
 				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 			}

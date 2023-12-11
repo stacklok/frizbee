@@ -50,11 +50,12 @@ func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
 
 	// error group
 	var eg errgroup.Group
+	cache := utils.NewRefCacher()
 
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
 		eg.Go(func() error {
 			r.Logf("Processing %s\n", path)
-			m, err := ghactions.ModifyReferencesInYAML(ctx, r.restIf, wflow, &cfg.GHActions)
+			m, err := ghactions.ModifyReferencesInYAMLWithCache(ctx, r.restIf, wflow, &cfg.GHActions, cache)
 			if err != nil {
 				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 			}
