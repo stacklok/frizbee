@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5/osfs"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/containers"
@@ -43,35 +45,43 @@ func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
 	bfs := osfs.New(basedir)
 
 	outfiles := map[string]string{}
-	modified := false
+
+	var modified atomic.Bool
+	modified.Store(false)
+
+	var eg errgroup.Group
 
 	err := utils.Traverse(bfs, base, func(path string, info fs.FileInfo) error {
-		if !utils.IsYAMLFile(info) {
+		eg.Go(func() error {
+			if !utils.IsYAMLFile(info) {
+				return nil
+			}
+
+			f, err := bfs.Open(path)
+			if err != nil {
+				return fmt.Errorf("failed to open file %s: %w", path, err)
+			}
+
+			// nolint:errcheck // ignore error
+			defer f.Close()
+
+			r.Logf("Processing %s\n", path)
+
+			buf := bytes.Buffer{}
+			m, err := containers.ReplaceReferenceFromYAML(ctx, r.imageRegex, f, &buf)
+			if err != nil {
+				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
+			}
+
+			modified.Store(modified.Load() || m)
+
+			if m {
+				r.Logf("Modified %s\n", path)
+				outfiles[path] = buf.String()
+			}
+
 			return nil
-		}
-
-		f, err := bfs.Open(path)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", path, err)
-		}
-
-		// nolint:errcheck // ignore error
-		defer f.Close()
-
-		r.Logf("Processing %s\n", path)
-
-		buf := bytes.Buffer{}
-		m, err := containers.ReplaceReferenceFromYAML(ctx, r.imageRegex, f, &buf)
-		if err != nil {
-			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
-		}
-
-		modified = modified || m
-
-		if m {
-			r.Logf("Modified %s\n", path)
-			outfiles[path] = buf.String()
-		}
+		})
 
 		return nil
 	})
@@ -79,11 +89,15 @@ func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
 		return err
 	}
 
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	if err := r.ProcessOutput(bfs, outfiles); err != nil {
 		return err
 	}
 
-	if r.ErrOnModified && modified {
+	if r.ErrOnModified && modified.Load() {
 		return fmt.Errorf("modified files")
 	}
 

@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/google/go-github/v56/github"
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/pkg/config"
@@ -42,26 +44,35 @@ func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
 	bfs := osfs.New(basedir, osfs.WithBoundOS())
 
 	outfiles := map[string]string{}
-	modified := false
+
+	var modified atomic.Bool
+	modified.Store(false)
+
+	// error group
+	var eg errgroup.Group
 
 	err := ghactions.TraverseGitHubActionWorkflows(bfs, base, func(path string, wflow *yaml.Node) error {
-		r.Logf("Processing %s\n", path)
-		m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow, &cfg.GHActions)
-		if err != nil {
-			return fmt.Errorf("failed to process YAML file %s: %w", path, err)
-		}
+		eg.Go(func() error {
+			r.Logf("Processing %s\n", path)
+			m, err := ghactions.ModifyReferencesInYAML(ctx, r.ghcli, wflow, &cfg.GHActions)
+			if err != nil {
+				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
+			}
 
-		modified = modified || m
+			modified.Store(modified.Load() || m)
 
-		buf, err := utils.YAMLToBuffer(wflow)
-		if err != nil {
-			return fmt.Errorf("failed to convert YAML to buffer: %w", err)
-		}
+			buf, err := utils.YAMLToBuffer(wflow)
+			if err != nil {
+				return fmt.Errorf("failed to convert YAML to buffer: %w", err)
+			}
 
-		if m {
-			r.Logf("Modified %s\n", path)
-			outfiles[path] = buf.String()
-		}
+			if m {
+				r.Logf("Modified %s\n", path)
+				outfiles[path] = buf.String()
+			}
+
+			return nil
+		})
 
 		return nil
 	})
@@ -69,11 +80,15 @@ func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	if err := r.ProcessOutput(bfs, outfiles); err != nil {
 		return err
 	}
 
-	if r.ErrOnModified && modified {
+	if r.ErrOnModified && modified.Load() {
 		return fmt.Errorf("modified files")
 	}
 
