@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetDigest(t *testing.T) {
@@ -60,7 +60,7 @@ func TestGetDigest(t *testing.T) {
 		{
 			name: "unexistent container in unexistent registry",
 			args: args{
-				refstr: "beer.io/ipa/toppling-goliath/king-sue:1.0.0",
+				refstr: "beeeeer.io/ipa/toppling-goliath/king-sue:1.0.0",
 			},
 			wantErr: true,
 		},
@@ -75,13 +75,13 @@ func TestGetDigest(t *testing.T) {
 			defer cancel()
 			got, err := GetDigest(ctx, tt.args.refstr)
 			if tt.wantErr {
-				require.Error(t, err)
-				require.Empty(t, got)
+				assert.Error(t, err)
+				assert.Empty(t, got)
 				return
 			}
 
-			require.NoError(t, err)
-			require.Equal(t, tt.want, got)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
