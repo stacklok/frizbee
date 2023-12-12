@@ -24,7 +24,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/cmd/containerimage"
+	"github.com/stacklok/frizbee/cmd/dockercompose"
 	"github.com/stacklok/frizbee/cmd/ghactions"
+	"github.com/stacklok/frizbee/cmd/kubernetes"
 	"github.com/stacklok/frizbee/pkg/config"
 )
 
@@ -40,6 +42,8 @@ func Execute() {
 
 	rootCmd.AddCommand(ghactions.CmdGHActions())
 	rootCmd.AddCommand(containerimage.CmdContainerImage())
+	rootCmd.AddCommand(dockercompose.CmdCompose())
+	rootCmd.AddCommand(kubernetes.CmdK8s())
 
 	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)

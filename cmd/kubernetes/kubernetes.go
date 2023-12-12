@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package containerimage provides command-line utilities to work with container images.
-package containerimage
+// Package kubernetes provides command-line utilities to work with kubernetes manifests.
+package kubernetes
 
 import (
 	"fmt"
@@ -24,17 +24,18 @@ import (
 	"github.com/stacklok/frizbee/pkg/config"
 )
 
-// CmdYAML represents the yaml sub-command
-func CmdYAML() *cobra.Command {
+// CmdK8s represents the k8s yaml sub-command
+func CmdK8s() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "yaml",
-		Short: "Replace container image references with checksums in YAML files",
+		Use:     "kubernetes",
+		Aliases: []string{"k8s"},
+		Short:   "Replace container image references with checksums in kubernetes YAML files",
 		Long: `This utility replaces a tag or branch reference in a container image references
 with the digest hash of the referenced tag in YAML files.
 
 Example:
 
-	$ frizbee containerimage yaml --dir . --dry-run --quiet --error
+	$ frizbee kubernetes --dir . --dry-run --quiet --error
 `,
 		RunE:         replaceYAML,
 		SilenceUsage: true,
