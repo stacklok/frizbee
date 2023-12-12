@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package containerimage
+package cmd
 
 import (
 	"bytes"
@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 
 	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/stacklok/frizbee/pkg/config"
@@ -32,12 +33,64 @@ import (
 	cliutils "github.com/stacklok/frizbee/pkg/utils/cli"
 )
 
-type yamlReplacer struct {
-	cliutils.Replacer
-	imageRegex string
+// DeclareYAMLReplacerFlags declares the flags for the YAML replacer
+func DeclareYAMLReplacerFlags(cli *cobra.Command) {
+	cli.Flags().StringP("dir", "d", ".", "manifests file or directory")
+
+	cliutils.DeclareReplacerFlags(cli)
 }
 
-func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
+// YAMLReplacer replaces container image references in YAML files
+type YAMLReplacer struct {
+	cliutils.Replacer
+	ImageRegex string
+}
+
+// WithImageRegex sets the image regex
+func WithImageRegex(regex string) func(*YAMLReplacer) {
+	return func(r *YAMLReplacer) {
+		r.ImageRegex = regex
+	}
+}
+
+// NewYAMLReplacer creates a new YAMLReplacer from the given
+// command-line arguments and options
+func NewYAMLReplacer(cli *cobra.Command, opts ...func(*YAMLReplacer)) (*YAMLReplacer, error) {
+	dir := cli.Flag("dir").Value.String()
+	dryRun, err := cli.Flags().GetBool("dry-run")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dry-run flag: %w", err)
+	}
+	errOnModified, err := cli.Flags().GetBool("error")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get error flag: %w", err)
+	}
+	quiet, err := cli.Flags().GetBool("quiet")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get quiet flag: %w", err)
+	}
+
+	dir = cliutils.ProcessDirNameForBillyFS(dir)
+
+	r := &YAMLReplacer{
+		Replacer: cliutils.Replacer{
+			Dir:           dir,
+			DryRun:        dryRun,
+			Quiet:         quiet,
+			ErrOnModified: errOnModified,
+			Cmd:           cli,
+		},
+		ImageRegex: "image",
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+
+	return r, nil
+}
+
+// Do runs the YAMLReplacer
+func (r *YAMLReplacer) Do(ctx context.Context, _ *config.Config) error {
 	basedir := filepath.Dir(r.Dir)
 	base := filepath.Base(r.Dir)
 	// NOTE: For some reason using boundfs causes a panic when trying to open a file.
@@ -69,7 +122,7 @@ func (r *yamlReplacer) do(ctx context.Context, _ *config.Config) error {
 			r.Logf("Processing %s\n", path)
 
 			buf := bytes.Buffer{}
-			m, err := containers.ReplaceReferenceFromYAMLWithCache(ctx, r.imageRegex, f, &buf, cache)
+			m, err := containers.ReplaceReferenceFromYAMLWithCache(ctx, r.ImageRegex, f, &buf, cache)
 			if err != nil {
 				return fmt.Errorf("failed to process YAML file %s: %w", path, err)
 			}

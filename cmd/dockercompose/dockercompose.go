@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package containerimage provides command-line utilities to work with container images.
-package containerimage
+// Package dockercompose provides command-line utilities to work with container images.
+package dockercompose
 
 import (
 	"fmt"
@@ -24,25 +24,24 @@ import (
 	"github.com/stacklok/frizbee/pkg/config"
 )
 
-// CmdYAML represents the yaml sub-command
-func CmdYAML() *cobra.Command {
+// CmdCompose represents the compose yaml sub-command
+func CmdCompose() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "yaml",
-		Short: "Replace container image references with checksums in YAML files",
+		Use:     "docker-compose",
+		Aliases: []string{"dockercompose", "compose"},
+		Short:   "Replace container image references with checksums in docker-compose YAML files",
 		Long: `This utility replaces a tag or branch reference in a container image references
-with the digest hash of the referenced tag in YAML files.
+with the digest hash of the referenced tag in docker-compose YAML files.
 
 Example:
 
-	$ frizbee containerimage yaml --dir . --dry-run --quiet --error
+	$ frizbee docker-compose --dir . --dry-run --quiet --error
 `,
 		RunE:         replaceYAML,
 		SilenceUsage: true,
 	}
 
 	// flags
-	cmd.Flags().StringP("image-regex", "i", "image", "regex to match container image references")
-
 	intcmd.DeclareYAMLReplacerFlags(cmd)
 
 	return cmd
@@ -53,12 +52,8 @@ func replaceYAML(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get config from context: %w", err)
 	}
-	ir, err := cmd.Flags().GetString("image-regex")
-	if err != nil {
-		return fmt.Errorf("failed to get image-regex flag: %w", err)
-	}
 
-	replacer, err := intcmd.NewYAMLReplacer(cmd, intcmd.WithImageRegex(ir))
+	replacer, err := intcmd.NewYAMLReplacer(cmd)
 	if err != nil {
 		return err
 	}
