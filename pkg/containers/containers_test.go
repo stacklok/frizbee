@@ -60,7 +60,7 @@ func TestGetDigest(t *testing.T) {
 		{
 			name: "unexistent container in unexistent registry",
 			args: args{
-				refstr: "beer.io/ipa/toppling-goliath/king-sue:1.0.0",
+				refstr: "beeeeer.io/ipa/toppling-goliath/king-sue:1.0.0",
 			},
 			wantErr: true,
 		},
