@@ -176,6 +176,12 @@ func setOfActions(node *yaml.Node) (mapset.Set[Action], error) {
 
 		if foundUses {
 			foundUses = false
+
+			// If the value is a local path, skip it
+			if IsLocal(v.Value) {
+				continue
+			}
+
 			a, err := parseValue(v.Value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
