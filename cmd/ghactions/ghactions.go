@@ -41,7 +41,8 @@ Example:
 
 This will replace all tag or branch references in all GitHub Actions workflows
 for the given directory.
-`,
+
+` + TokenHelpText + "\n",
 		RunE:         replace,
 		SilenceUsage: true,
 	}
@@ -81,7 +82,7 @@ func replace(cmd *cobra.Command, _ []string) error {
 
 	ctx := cmd.Context()
 
-	ghcli := ghrest.NewGhRest(os.Getenv("GITHUB_TOKEN"))
+	ghcli := ghrest.NewGhRest(os.Getenv(GitHubTokenEnvKey))
 
 	replacer := &replacer{
 		Replacer: cliutils.Replacer{
