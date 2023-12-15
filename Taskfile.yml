@@ -3,13 +3,16 @@ version: '3'
 
 tasks:
   test:
+    desc: Run tests
     cmds:
       - go test -v ./...
 
   build:
+    desc: Build the frizbee binary
     cmds:
       - go build -o ./bin/ ./...
 
   lint:
+    desc: Run linter
     cmds:
       - golangci-lint run --timeout 5m0s --config .golangci.yml
