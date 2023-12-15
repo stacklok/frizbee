@@ -22,6 +22,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/osfs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -59,9 +61,15 @@ type Filter struct {
 
 // ParseConfigFile parses a configuration file.
 func ParseConfigFile(configfile string) (*Config, error) {
+	bfs := osfs.New(".")
+	return ParseConfigFileFromFS(bfs, configfile)
+}
+
+// ParseConfigFileFromFS parses a configuration file from a filesystem.
+func ParseConfigFileFromFS(fs billy.Filesystem, configfile string) (*Config, error) {
 	cfg := &Config{}
 	cleancfgfile := filepath.Clean(configfile)
-	cfgF, err := os.Open(cleancfgfile)
+	cfgF, err := fs.Open(cleancfgfile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return cfg, nil
