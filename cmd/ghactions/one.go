@@ -39,7 +39,8 @@ Example:
 
 This will replace the tag or branch reference for the commit hash of the
 referenced tag or branch.
-`,
+
+` + TokenHelpText + "\n",
 		Args:         cobra.ExactArgs(1),
 		RunE:         replaceOne,
 		SilenceUsage: true,
@@ -52,7 +53,7 @@ func replaceOne(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	ref := args[0]
 
-	ghcli := ghrest.NewGhRest(os.Getenv("GITHUB_TOKEN"))
+	ghcli := ghrest.NewGhRest(os.Getenv(GitHubTokenEnvKey))
 
 	act, ref, err := ghactions.ParseActionReference(ref)
 	if err != nil {
