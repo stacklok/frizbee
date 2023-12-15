@@ -93,3 +93,5 @@ jobs:
       - name: Frizbee
         run: |-
           bin/frizbee ghactions --dry-run --error
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
