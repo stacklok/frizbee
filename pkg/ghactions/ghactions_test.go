@@ -18,11 +18,14 @@ package ghactions_test
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/internal/ghrest"
+	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
@@ -233,6 +236,126 @@ func TestGetChecksum(t *testing.T) {
 			}
 			require.NoError(t, err, "Wanted no error, got %v", err)
 			require.Equal(t, tt.want, got, "Wanted %v, got %v", tt.want, got)
+		})
+	}
+}
+
+const (
+	workflowYAML = `
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup go
+        uses: actions/setup-go@v4
+`
+)
+
+func TestModifyReferencesInYAML(t *testing.T) {
+	t.Parallel()
+
+	tok := os.Getenv("GITHUB_TOKEN")
+
+	tests := []struct {
+		name           string
+		mustContain    []string
+		mustNotContain []string
+		wantErr        bool
+		cfg            *config.GHActions
+	}{
+		{
+			name:    "modify all",
+			wantErr: false,
+			mustContain: []string{
+				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
+			},
+			mustNotContain: []string{
+				"              uses: actions/checkout@v4",
+				"              uses: actions/setup-go@v4",
+			},
+			cfg: &config.GHActions{
+				Filter: config.Filter{
+					Exclude: []string{},
+				},
+			},
+		},
+		{
+			name:    "exclude full uses",
+			wantErr: false,
+			mustContain: []string{
+				"              uses: actions/checkout@v4",
+				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
+			},
+			mustNotContain: []string{
+				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/setup-go@v4",
+			},
+			cfg: &config.GHActions{
+				Filter: config.Filter{
+					Exclude: []string{
+						"actions/checkout@v4",
+					},
+				},
+			},
+		},
+		{
+			name:    "exclude just the action name",
+			wantErr: false,
+			mustContain: []string{
+				"              uses: actions/checkout@v4",
+				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
+			},
+			mustNotContain: []string{
+				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/setup-go@v4",
+			},
+			cfg: &config.GHActions{
+				Filter: config.Filter{
+					Exclude: []string{
+						"actions/checkout",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ghcli := ghrest.NewGhRest(tok)
+
+			var root yaml.Node
+			err := yaml.Unmarshal([]byte(workflowYAML), &root)
+			require.NoError(t, err, "Error unmarshalling YAML, got %v", err)
+
+			got, err := ghactions.ModifyReferencesInYAML(context.Background(), ghcli, &root, tt.cfg)
+			if tt.wantErr {
+				require.Error(t, err, "Wanted error, got none")
+				require.Empty(t, got, "Wanted empty string, got %v", got)
+				return
+			}
+			require.NoError(t, err, "Wanted no error, got %v", err)
+
+			out, err := yaml.Marshal(&root)
+			require.NoError(t, err, "Error marhsalling YAML, got %v", err)
+			stringSlice := strings.Split(string(out), "\n")
+
+			require.Subset(t, stringSlice, tt.mustContain, "Expected %v to not appear in %v", tt.mustContain, stringSlice)
+			require.NotSubset(t, stringSlice, tt.mustNotContain, "Expected %v to not appear in %v", tt.mustNotContain, stringSlice)
 		})
 	}
 }
