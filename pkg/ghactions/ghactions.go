@@ -123,6 +123,10 @@ func ModifyReferencesInYAMLWithCache(
 				return modified, fmt.Errorf("failed to parse action reference '%s': %w", v.Value, err)
 			}
 
+			if shouldExclude(cfg, act) {
+				continue
+			}
+
 			var sum string
 
 			// Check if we have a cached value
