@@ -9,12 +9,12 @@ builds:
     flags:
       - -trimpath
       - -tags=netgo
-    # TODO: Add ldflags
-    # ldflags:
-    #  - "-X main.Version={{ .Env.VERSION }}"
-    #  - "-X main.Commit={{ .Env.COMMIT }}"
-    #  - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"
-    #  - "-X main.TreeState={{ .Env.TREE_STATE }}"
+    ldflags:
+      - "-X main.Version={{ .Env.VERSION }}"
+      - "-X main.Commit={{ .Env.COMMIT }}"
+      - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"
+      - "-X main.TreeState={{ .Env.TREE_STATE }}"
+      - "-X github.com/stacklok/frizbee/pkg/constants.CLIVersion={{ .Env.VERSION }}"
     goos:
       - linux
       - windows
