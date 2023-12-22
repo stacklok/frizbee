@@ -48,7 +48,7 @@ services:
 version: v1
 services:
   - name: web
-    image: index.docker.io/library/nginx@sha256:10d1f5b58f74683ad34eb29287e07dab1e90f10af243f151bb50aa5dbb4d62ee  # 1.25.3
+    image: index.docker.io/library/nginx@sha256:2bdc49f2f8ae8d8dc50ed00f2ee56d00385c6f8bc8a8b320d0a294d9e3b49026  # 1.25.3
   - name: localstack
     image: index.docker.io/localstack/localstack@sha256:e606c4421419030b12d63a59f1211f57f5b0fbf7e9ce769e6250ee62ff4f9293  # 3.0.2
 `,

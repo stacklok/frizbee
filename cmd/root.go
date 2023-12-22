@@ -27,6 +27,7 @@ import (
 	"github.com/stacklok/frizbee/cmd/dockercompose"
 	"github.com/stacklok/frizbee/cmd/ghactions"
 	"github.com/stacklok/frizbee/cmd/kubernetes"
+	"github.com/stacklok/frizbee/cmd/version"
 	"github.com/stacklok/frizbee/pkg/config"
 )
 
@@ -44,6 +45,7 @@ func Execute() {
 	rootCmd.AddCommand(containerimage.CmdContainerImage())
 	rootCmd.AddCommand(dockercompose.CmdCompose())
 	rootCmd.AddCommand(kubernetes.CmdK8s())
+	rootCmd.AddCommand(version.CmdVersion)
 
 	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
