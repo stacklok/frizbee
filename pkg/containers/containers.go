@@ -20,11 +20,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-
-	"github.com/stacklok/frizbee/pkg/constants"
+	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
 )
+
+// nolint: gochecknoglobals
+var platform *gocrv1.Platform
+
+// SetPlatform sets the platform to be used for getting digests.
+func SetPlatform(pf *gocrv1.Platform) {
+	platform = pf
+}
 
 // GetDigest returns the digest of a container image reference.
 func GetDigest(ctx context.Context, refstr string) (string, error) {
@@ -39,12 +46,13 @@ func GetDigest(ctx context.Context, refstr string) (string, error) {
 // GetDigestFromRef returns the digest of a container image reference
 // from a name.Reference.
 func GetDigestFromRef(ctx context.Context, ref name.Reference) (string, error) {
-	desc, err := remote.Get(ref,
-		remote.WithContext(ctx),
-		remote.WithUserAgent(constants.UserAgent))
+	digest, err := crane.Digest(ref.String(),
+		crane.WithContext(ctx),
+		crane.WithPlatform(platform),
+	)
 	if err != nil {
 		return "", fmt.Errorf("failed to get remote reference: %w", err)
 	}
 
-	return desc.Digest.String(), nil
+	return digest, nil
 }
