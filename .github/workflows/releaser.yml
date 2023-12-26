@@ -30,6 +30,24 @@ permissions:
   contents: write
 
 jobs:
+  ldflags_args:
+    runs-on: ubuntu-latest
+    outputs:
+      commit-date: ${{ steps.ldflags.outputs.commit-date }}
+      commit: ${{ steps.ldflags.outputs.commit }}
+      version: ${{ steps.ldflags.outputs.version }}
+      tree-state: ${{ steps.ldflags.outputs.tree-state }}
+    steps:
+      - id: checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
+      - id: ldflags
+        run: |
+          echo "commit=$GITHUB_SHA" >> $GITHUB_OUTPUT
+          echo "commit-date=$(git log --date=iso8601-strict -1 --pretty=%ct)" >> $GITHUB_OUTPUT
+          echo "version=$(git describe --tags --always --dirty | cut -c2-)" >> $GITHUB_OUTPUT
+          echo "tree-state=$(if git diff --quiet; then echo "clean"; else echo "dirty"; fi)" >> $GITHUB_OUTPUT
   release:
     name: Build and release
     outputs:
@@ -67,6 +85,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           WINGET_GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
+          VERSION: ${{ needs.ldflags_args.outputs.version }}
+          COMMIT: ${{ needs.ldflags_args.outputs.commit }}
+          COMMIT_DATE: ${{ needs.ldflags_args.outputs.commit-date }}
+          TREE_STATE: ${{ needs.ldflags_args.outputs.tree-state }}
 
       - name: Generate subject
         id: hash
