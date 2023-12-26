@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,6 +82,95 @@ func TestGetDigest(t *testing.T) {
 				return
 			}
 
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetDigestFromRef(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		refstr string
+	}
+	type flags struct {
+		platform *gocrv1.Platform
+	}
+	tests := []struct {
+		name    string
+		args    args
+		flags   flags
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "valid image without platform",
+			args: args{
+				refstr: "registry.k8s.io/kube-apiserver:v1.20.0",
+			},
+			want: "sha256:8b8125d7a6e4225b08f04f65ca947b27d0cc86380bf09fab890cc80408230114",
+		},
+		{
+			name: "valid arm64 image",
+			args: args{
+				refstr: "registry.k8s.io/kube-apiserver:v1.20.0",
+			},
+			flags: flags{
+				platform: &gocrv1.Platform{Architecture: "arm64", OS: "linux"},
+			},
+			want: "sha256:36464375c04fad5847fa5ab371acb9786e49e75a4261dbdfae739593e310c72f",
+		},
+		{
+			name: "valid amd64 image",
+			args: args{
+				refstr: "registry.k8s.io/kube-apiserver:v1.20.0",
+			},
+			flags: flags{
+				platform: &gocrv1.Platform{Architecture: "amd64", OS: "linux"},
+			},
+			want: "sha256:8033693d4421e41bd91380ce3c6b1a20fbaf762e3c4d64f79bbb3e30a2fb4310",
+		},
+		{
+			name: "Invalid architecture",
+			args: args{
+				refstr: "registry.k8s.io/kube-apiserver:v1.20.0",
+			},
+			flags: flags{
+				platform: &gocrv1.Platform{Architecture: "foo", OS: "linux"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid OS",
+			args: args{
+				refstr: "registry.k8s.io/kube-apiserver:v1.20.0",
+			},
+			flags: flags{
+				platform: &gocrv1.Platform{Architecture: "amd64", OS: "foo"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			reference, err := name.ParseReference(tt.args.refstr)
+			if err != nil {
+				t.Fatalf("failed to parse reference: %v", err)
+			}
+			SetPlatform(tt.flags.platform)
+			got, err := GetDigestFromRef(ctx, reference)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Empty(t, got)
+				return
+			}
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
