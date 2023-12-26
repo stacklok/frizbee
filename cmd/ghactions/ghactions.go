@@ -43,6 +43,7 @@ This will replace all tag or branch references in all GitHub Actions workflows
 for the given directory.
 
 ` + TokenHelpText + "\n",
+		Aliases:      []string{"actions", "action"},
 		RunE:         replace,
 		SilenceUsage: true,
 	}
