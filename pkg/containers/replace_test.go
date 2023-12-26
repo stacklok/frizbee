@@ -39,18 +39,18 @@ func TestReplaceImageReference(t *testing.T) {
 			input: `
 version: v1
 services:
-  - name: web
-    image: nginx:1.25.3
-  - name: localstack
-    image: localstack/localstack:3.0.2
+  - name: kube-apiserver
+    image: registry.k8s.io/kube-apiserver:v1.20.0
+  - name: kube-controller-manager
+    image: registry.k8s.io/kube-controller-manager:v1.15.0
 `,
 			expectedOutput: `
 version: v1
 services:
-  - name: web
-    image: index.docker.io/library/nginx@sha256:2bdc49f2f8ae8d8dc50ed00f2ee56d00385c6f8bc8a8b320d0a294d9e3b49026  # 1.25.3
-  - name: localstack
-    image: index.docker.io/localstack/localstack@sha256:e606c4421419030b12d63a59f1211f57f5b0fbf7e9ce769e6250ee62ff4f9293  # 3.0.2
+  - name: kube-apiserver
+    image: registry.k8s.io/kube-apiserver@sha256:8b8125d7a6e4225b08f04f65ca947b27d0cc86380bf09fab890cc80408230114  # v1.20.0
+  - name: kube-controller-manager
+    image: registry.k8s.io/kube-controller-manager@sha256:835f32a5cdb30e86f35675dd91f9c7df01d48359ab8b51c1df866a2c7ea2e870  # v1.15.0
 `,
 			modified: true,
 		},
