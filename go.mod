@@ -3,10 +3,11 @@ module github.com/stacklok/frizbee
 go 1.21
 
 require (
-	github.com/deckarep/golang-set/v2 v2.5.0
+	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/google/go-containerregistry v0.17.0
 	github.com/google/go-github/v56 v56.0.0
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
@@ -27,7 +28,6 @@ require (
 	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
