@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/pkg/containers"
@@ -59,15 +60,25 @@ func replaceOne(cmd *cobra.Command, args []string) error {
 	}
 
 	img := r.Context().String()
-
+	var os, arch string
 	if len(platform) != 0 {
 		if !strings.Contains(platform, "/") {
 			return fmt.Errorf("platform must be in the format os/arch")
 		}
-		os, arch := strings.Split(platform, "/")[0], strings.Split(platform, "/")[1]
-		containers.SetPlatform(&gocrv1.Platform{OS: os, Architecture: arch})
+		os, arch = strings.Split(platform, "/")[0], strings.Split(platform, "/")[1]
 	}
-	sum, err := containers.GetDigest(ctx, ref)
+
+	var pf gocrv1.Platform
+	var opts []remote.Option
+	if len(os) != 0 && len(arch) != 0 {
+		pf = gocrv1.Platform{
+			Architecture: arch,
+			OS:           os,
+		}
+		opts = append(opts, remote.WithPlatform(pf))
+	}
+
+	sum, err := containers.GetDigest(ctx, ref, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to get checksum for action '%s': %w", ref, err)
 	}

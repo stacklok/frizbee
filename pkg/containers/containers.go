@@ -20,39 +20,42 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/stacklok/frizbee/pkg/constants"
 )
 
-// nolint: gochecknoglobals
-var platform *gocrv1.Platform
-
-// SetPlatform sets the platform to be used for getting digests.
-func SetPlatform(pf *gocrv1.Platform) {
-	platform = pf
-}
-
 // GetDigest returns the digest of a container image reference.
-func GetDigest(ctx context.Context, refstr string) (string, error) {
+func GetDigest(ctx context.Context, refstr string, opts ...remote.Option) (string, error) {
 	ref, err := name.ParseReference(refstr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse reference: %w", err)
 	}
 
-	return GetDigestFromRef(ctx, ref)
+	return GetDigestFromRef(ctx, ref, opts...)
 }
 
 // GetDigestFromRef returns the digest of a container image reference
 // from a name.Reference.
-func GetDigestFromRef(ctx context.Context, ref name.Reference) (string, error) {
-	digest, err := crane.Digest(ref.String(),
-		crane.WithContext(ctx),
-		crane.WithPlatform(platform),
-	)
+func GetDigestFromRef(ctx context.Context, ref name.Reference, opts ...remote.Option) (string, error) {
+	opts = append(opts, remote.WithContext(ctx), remote.WithUserAgent(constants.UserAgent))
+	desc, err := remote.Get(ref, opts...)
 	if err != nil {
 		return "", fmt.Errorf("failed to get remote reference: %w", err)
 	}
 
-	return digest, nil
+	// check if descriptor points to an index and return the digest if it does
+	// if desc.MediaType.IsIndex() {
+	// 	return desc.Digest.String(), nil
+	// }
+
+	img, err := desc.Image()
+	if err != nil {
+		return "", err
+	}
+	digest, err := img.Digest()
+	if err != nil {
+		return "", err
+	}
+	return digest.String(), nil
 }
