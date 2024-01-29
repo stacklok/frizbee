@@ -25,14 +25,6 @@ import (
 	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
-// options represents the options for the command
-type options struct {
-	output string
-}
-
-// nolint: gochecknoglobals
-var o = &options{}
-
 // CmdList represents the one sub-command
 func CmdList() *cobra.Command {
 	cmd := &cobra.Command{
@@ -49,7 +41,7 @@ Example:
 	}
 
 	cmd.Flags().StringP("dir", "d", ".github/workflows", "workflows directory")
-	cmd.Flags().StringVarP(&o.output, "output", "o", "table", "output format")
+	cmd.Flags().StringP("output", "o", "table", "output format. Can be 'json' or 'table'")
 
 	return cmd
 }
@@ -61,7 +53,8 @@ func list(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to list actions: %w", err)
 	}
 
-	switch o.output {
+	output := cmd.Flag("output").Value.String()
+	switch output {
 	case "json":
 		jsonBytes, err := json.MarshalIndent(actions, "", "  ")
 		if err != nil {
@@ -79,6 +72,7 @@ func list(cmd *cobra.Command, _ []string) error {
 		}
 		table.Render()
 		return nil
+	default:
+		return fmt.Errorf("unknown output format: %s", output)
 	}
-	return nil
 }
