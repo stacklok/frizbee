@@ -45,7 +45,7 @@ func Execute() {
 	rootCmd.AddCommand(containerimage.CmdContainerImage())
 	rootCmd.AddCommand(dockercompose.CmdCompose())
 	rootCmd.AddCommand(kubernetes.CmdK8s())
-	rootCmd.AddCommand(version.CmdVersion)
+	rootCmd.AddCommand(version.CmdVersion())
 
 	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
