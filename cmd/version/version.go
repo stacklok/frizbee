@@ -23,12 +23,13 @@ import (
 )
 
 // CmdVersion is the Cobra command for the version command.
-// nolint: gochecknoglobals
-var CmdVersion = &cobra.Command{
-	Use:   "version",
-	Short: "Print frizbee CLI version",
-	Long:  "The frizbee version command prints the version of the frizbee CLI.",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Println(constants.VerboseCLIVersion)
-	},
+func CmdVersion() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print frizbee CLI version",
+		Long:  "The frizbee version command prints the version of the frizbee CLI.",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Println(constants.VerboseCLIVersion)
+		},
+	}
 }
