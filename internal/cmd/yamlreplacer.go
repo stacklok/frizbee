@@ -29,6 +29,7 @@ import (
 
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/containers"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/utils"
 	cliutils "github.com/stacklok/frizbee/pkg/utils/cli"
 )
@@ -152,7 +153,7 @@ func (r *YAMLReplacer) Do(ctx context.Context, _ *config.Config) error {
 	}
 
 	if r.ErrOnModified && modified.Load() {
-		return fmt.Errorf("modified files")
+		return ferrors.ErrModifiedFiles
 	}
 
 	return nil

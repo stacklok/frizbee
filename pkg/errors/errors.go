@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Stacklok, Inc.
+// Copyright 2024 Stacklok, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,23 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package version adds a version command.
-package version
+// Package errors provides error values, constants and functions.
+package errors
 
-import (
-	"github.com/spf13/cobra"
+import "errors"
 
-	"github.com/stacklok/frizbee/pkg/constants"
+var (
+	// ErrModifiedFiles is returned when modified files are found
+	ErrModifiedFiles = errors.New("modified files")
 )
-
-// CmdVersion is the Cobra command for the version command.
-func CmdVersion() *cobra.Command {
-	return &cobra.Command{
-		Use:   "version",
-		Short: "Print frizbee CLI version",
-		Long:  "The frizbee version command prints the version of the frizbee CLI.",
-		Run: func(cmd *cobra.Command, _ []string) {
-			cmd.Println(constants.VerboseCLIVersion)
-		},
-	}
-}

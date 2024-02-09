@@ -27,6 +27,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/stacklok/frizbee/pkg/config"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/ghactions"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/utils"
@@ -90,7 +91,7 @@ func (r *replacer) do(ctx context.Context, cfg *config.Config) error {
 	}
 
 	if r.ErrOnModified && modified.Load() {
-		return fmt.Errorf("modified files")
+		return ferrors.ErrModifiedFiles
 	}
 
 	return nil
