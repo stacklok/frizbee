@@ -71,7 +71,7 @@ func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string
 
 	// Check if we're using a checksum
 	if len(ref) != 40 {
-		return "", fmt.Errorf("given reference is not a tag nor branch")
+		return "", ErrInvalidActionReference
 	}
 
 	return ref, nil

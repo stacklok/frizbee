@@ -15,9 +15,12 @@
 
 package ghactions
 
-import "fmt"
+import "errors"
 
 var (
 	// ErrInvalidAction is returned when parsing the action fails.
-	ErrInvalidAction = fmt.Errorf("invalid action")
+	ErrInvalidAction = errors.New("invalid action")
+
+	// ErrInvalidActionReference is returned when parsing the action reference fails.
+	ErrInvalidActionReference = errors.New("action reference is not a tag nor branch")
 )

@@ -18,6 +18,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,11 +34,16 @@ type contextConfigKey struct{}
 // nolint:gochecknoglobals // this is a context key
 var ContextConfigKey = contextConfigKey{}
 
+var (
+	// ErrNoConfigInContext is returned when no configuration is found in the context.
+	ErrNoConfigInContext = errors.New("no configuration found in context")
+)
+
 // FromContext returns the configuration from the context.
 func FromContext(ctx context.Context) (*Config, error) {
 	cfg, ok := ctx.Value(ContextConfigKey).(*Config)
 	if !ok {
-		return nil, fmt.Errorf("failed to get config from context")
+		return nil, ErrNoConfigInContext
 	}
 
 	return cfg, nil
