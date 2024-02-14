@@ -12,6 +12,11 @@ tasks:
     cmds:
       - go test -v ./...
 
+  cover:
+    desc: Run coverage
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+
   build:
     desc: Build the frizbee binary
     cmds:
