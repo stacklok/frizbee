@@ -35,6 +35,35 @@ jobs:
           name: frizbee
           path: bin/frizbee
 
+  cover:
+    name: Coverage
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: setup task
+        uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run coverage
+        run: task cover
+
+      # Using gcov didn't seem to work for the coveralls app, so we convert it to lcov
+      - name: Try converting to LCOV
+        run: go run github.com/jandelgado/gcov2lcov@latest -infile=./coverage.out -outfile=./coverage.lcov
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@e5e2507fa218d2031f39816cd7d078ebd1f1a6c6 # v2.2.3
+
   lint:
     runs-on: ubuntu-latest
     steps:
