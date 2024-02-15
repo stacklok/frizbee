@@ -1,5 +1,9 @@
 # Frizbee
 
+[![Coverage Status](https://coveralls.io/repos/github/stacklok/frizbee/badge.svg?branch=main)](https://coveralls.io/github/stacklok/frizbee?branch=main) | [![License: Apache 2.0](https://img.shields.io/badge/License-Apache2.0-brightgreen.svg)](https://opensource.org/licenses/Apache-2.0) | [![](https://dcbadge.vercel.app/api/server/RkzVuTp3WK?logo=discord&label=Discord&color=5865&style=flat)](https://discord.gg/RkzVuTp3WK)
+
+---
+
 Frizbee is a tool you may throw a tag at and it comes back with a checksum.
 
 It's a command-line tool designed to provide checksums for GitHub Actions
