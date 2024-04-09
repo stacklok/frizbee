@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v61/github"
 
 	"github.com/stacklok/frizbee/pkg/interfaces"
 )
