@@ -54,6 +54,11 @@ func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string
 		return "", err
 	}
 
+	// Check if we're using a checksum
+	if isChecksum(ref) {
+		return ref, nil
+	}
+
 	res, err := getCheckSumForTag(ctx, restIf, owner, repo, ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to get checksum for tag: %w", err)
@@ -69,12 +74,7 @@ func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string
 		return res, nil
 	}
 
-	// Check if we're using a checksum
-	if len(ref) != 40 {
-		return "", ErrInvalidActionReference
-	}
-
-	return ref, nil
+	return "", ErrInvalidActionReference
 }
 
 // ModifyReferencesInYAML takes the given YAML structure and replaces
@@ -264,4 +264,9 @@ func shouldExclude(cfg *config.GHActions, input string) bool {
 		}
 	}
 	return false
+}
+
+// isChecksum returns true if the input is a checksum.
+func isChecksum(ref string) bool {
+	return len(ref) == 40
 }
