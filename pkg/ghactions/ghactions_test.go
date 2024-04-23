@@ -68,13 +68,13 @@ func TestParseActionReference(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11",
+			name: "actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			args: args{
-				input: "actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11",
+				input: "actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			},
 			returns: returns{
 				action:    "actions/checkout",
-				reference: "b4ffde65f46336ab88eb53be808477a3936bae11",
+				reference: "1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			},
 			wantErr: false,
 		},
@@ -145,9 +145,9 @@ func TestGetChecksum(t *testing.T) {
 			name: "actions/checkout with checksum returns checksum",
 			args: args{
 				action: "actions/checkout",
-				ref:    "b4ffde65f46336ab88eb53be808477a3936bae11",
+				ref:    "1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			},
-			want:    "b4ffde65f46336ab88eb53be808477a3936bae11",
+			want:    "1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			wantErr: false,
 		},
 		{
@@ -277,7 +277,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 			name:    "modify all",
 			wantErr: false,
 			mustContain: []string{
-				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
@@ -298,7 +298,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
-				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
 				"              uses: actions/setup-go@v4",
 			},
 			cfg: &config.GHActions{
@@ -317,7 +317,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
-				"              uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4",
+				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
 				"              uses: actions/setup-go@v4",
 			},
 			cfg: &config.GHActions{
