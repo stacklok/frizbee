@@ -210,7 +210,7 @@ func TestGetChecksum(t *testing.T) {
 				action: "bufbuild/buf-setup-action",
 				ref:    "v1",
 			},
-			want: "9990c72db080fa39cf561230b8d2d7b736681f85",
+			want: "480a0ee8a588045b52a847b48138c6f377a89519",
 		},
 		{
 			name: "anchore/sbom-action/download-syft with a sub-action works",
