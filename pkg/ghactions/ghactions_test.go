@@ -277,7 +277,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 			name:    "modify all",
 			wantErr: false,
 			mustContain: []string{
-				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
+				"              uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4",
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
@@ -298,7 +298,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
-				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
+				"              uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4",
 				"              uses: actions/setup-go@v4",
 			},
 			cfg: &config.GHActions{
@@ -317,7 +317,7 @@ func TestModifyReferencesInYAML(t *testing.T) {
 				"              uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4",
 			},
 			mustNotContain: []string{
-				"              uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4",
+				"              uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4",
 				"              uses: actions/setup-go@v4",
 			},
 			cfg: &config.GHActions{
