@@ -58,7 +58,7 @@ Dirty: {{.Modified}}
 `
 )
 
-// nolint:gochecknoinits
+// nolint:init
 func init() {
 	buildinfo, ok := debug.ReadBuildInfo()
 	if !ok {
