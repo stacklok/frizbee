@@ -17,9 +17,9 @@
 package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 
@@ -39,18 +39,24 @@ var (
 	ErrNoConfigInContext = errors.New("no configuration found in context")
 )
 
-// FromContext returns the configuration from the context.
-func FromContext(ctx context.Context) (*Config, error) {
+// FromCommand returns the configuration from the cobra command.
+func FromCommand(cmd *cobra.Command) (*Config, error) {
+	ctx := cmd.Context()
 	cfg, ok := ctx.Value(ContextConfigKey).(*Config)
 	if !ok {
 		return nil, ErrNoConfigInContext
 	}
 
+	// If the platform flag is set, override the platform in the configuration.
+	if cmd.Flags().Lookup("platform") != nil {
+		cfg.Platform = cmd.Flag("platform").Value.String()
+	}
 	return cfg, nil
 }
 
 // Config is the frizbee configuration.
 type Config struct {
+	Platform  string    `yaml:"platform" mapstructure:"platform"`
 	GHActions GHActions `yaml:"ghactions" mapstructure:"ghactions"`
 }
 

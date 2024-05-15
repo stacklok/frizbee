@@ -84,7 +84,7 @@ To get the digest for a single image tag, you can use the `containerimage one` c
 frizbee containerimage one quay.io/stacklok/frizbee:latest
 ```
 
-This will print the image refrence with the digest for the image tag provided.
+This will print the image reference with the digest for the image tag provided.
 
 
 ## Contributing

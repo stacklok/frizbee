@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ghactions
+package action
 
 import (
 	"fmt"
+	"github.com/stacklok/frizbee/internal/cli"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/replacer"
 	"os"
 
 	"github.com/spf13/cobra"
-
-	"github.com/stacklok/frizbee/internal/ghrest"
-	"github.com/stacklok/frizbee/pkg/ghactions"
 )
 
 // CmdOne represents the one sub-command
@@ -35,39 +35,47 @@ with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ frizbee ghactions one actions/checkout@v4.1.1
+	$ frizbee action one actions/checkout@v4.1.1
 
 This will replace the tag or branch reference for the commit hash of the
 referenced tag or branch.
 
-` + TokenHelpText + "\n",
+` + cli.TokenHelpText + "\n",
 		Args:         cobra.ExactArgs(1),
 		RunE:         replaceOne,
 		SilenceUsage: true,
 	}
+	cli.DeclareFrizbeeFlags(cmd, "")
 
 	return cmd
 }
 
 func replaceOne(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
 	ref := args[0]
 
-	ghcli := ghrest.NewGhRest(os.Getenv(GitHubTokenEnvKey))
-
-	act, ref, err := ghactions.ParseActionReference(ref)
+	// Extract the CLI flags from the cobra command
+	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to parse action reference '%s': %w", ref, err)
+		return err
 	}
 
-	sum, err := ghactions.GetChecksum(ctx, ghcli, act, ref)
+	// Set up the config
+	cfg, err := config.FromCommand(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to get checksum for action '%s': %w", ref, err)
+		return err
 	}
 
-	if ref != sum {
-		fmt.Fprintf(cmd.OutOrStdout(), "%s@%s\n", act, sum)
+	// Create a new replacer
+	r := replacer.New(cfg).
+		WithUserRegex(cliFlags.Regex).
+		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+
+	// Replace the passed reference
+	res, err := r.ParseSingleGitHubAction(cmd.Context(), ref)
+	if err != nil {
+		return err
 	}
 
+	fmt.Fprintln(cmd.OutOrStdout(), res)
 	return nil
 }

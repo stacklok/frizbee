@@ -25,20 +25,20 @@ import (
 	"github.com/google/go-github/v61/github"
 )
 
-// GhRest is the struct that contains the GitHub REST API client
+// Client is the struct that contains the GitHub REST API client
 // this struct implements the REST API
-type GhRest struct {
+type Client struct {
 	client *github.Client
 }
 
-// NewGhRest creates a new instance of GhRest
-func NewGhRest(token string) *GhRest {
+// NewClient creates a new instance of GhRest
+func NewClient(token string) *Client {
 	ghcli := github.NewClient(nil)
 
 	if token != "" {
 		ghcli = ghcli.WithAuthToken(token)
 	}
-	return &GhRest{
+	return &Client{
 		client: ghcli,
 	}
 }
@@ -47,12 +47,12 @@ func NewGhRest(token string) *GhRest {
 // which will be resolved to the BaseURL of the Client. Relative URLS should
 // always be specified without a preceding slash. If specified, the value
 // pointed to by body is JSON encoded and included as the request body.
-func (c *GhRest) NewRequest(method, requestUrl string, body any) (*http.Request, error) {
+func (c *Client) NewRequest(method, requestUrl string, body any) (*http.Request, error) {
 	return c.client.NewRequest(method, requestUrl, body)
 }
 
 // Do sends an API request and returns the API response.
-func (c *GhRest) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var buf bytes.Buffer
 
 	// The GitHub client closes the response body, so we need to capture it

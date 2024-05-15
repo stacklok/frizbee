@@ -1,10 +1,11 @@
+//
 // Copyright 2023 Stacklok, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,53 +13,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package containerimage
+package image
 
 import (
 	"fmt"
-
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
-
-	"github.com/stacklok/frizbee/pkg/containers"
+	"github.com/stacklok/frizbee/internal/cli"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/replacer"
 )
 
 // CmdOne represents the one sub-command
 func CmdOne() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "one",
-		Short: "Replace the tag in container image reference",
-		Long: `This utility replaces a tag or branch reference in a container image reference
-with the digest hash of the referenced tag.
+		Short: "Replace the tag with a digest reference",
+		Long: `This utility replaces a tag of a container reference
+with the corresponding digest.
 	
 Example:
 
-	$ frizbee containerimage one ghcr.io/stacklok/minder/helm/minder:0.20231123.829_ref.26ca90b
+	$ frizbee image one ghcr.io/stacklok/minder/server:latest
+
+This will replace a tag of the container reference with the corresponding digest.
+
 `,
 		Args:         cobra.ExactArgs(1),
 		RunE:         replaceOne,
 		SilenceUsage: true,
 	}
+	cli.DeclareFrizbeeFlags(cmd, "")
 
 	return cmd
 }
 
 func replaceOne(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
 	ref := args[0]
 
-	r, err := name.ParseReference(ref)
+	// Extract the CLI flags from the cobra command
+	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to parse reference: %w", err)
+		return err
 	}
 
-	img := r.Context().String()
-
-	sum, err := containers.GetDigest(ctx, ref)
+	// Set up the config
+	cfg, err := config.FromCommand(cmd)
 	if err != nil {
-		return fmt.Errorf("failed to get checksum for action '%s': %w", ref, err)
+		return err
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "%s@%s\n", img, sum)
+	// Create a new replacer
+	r := replacer.New(cfg).
+		WithUserRegex(cliFlags.Regex)
+
+	// Replace the passed reference
+	res, err := r.ParseSingleContainerImage(cmd.Context(), ref)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), res)
 	return nil
 }

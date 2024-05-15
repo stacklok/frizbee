@@ -1,32 +1,79 @@
-//
-// Copyright 2023 Stacklok, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package ghactions
+package action
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/google/go-github/v61/github"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"net/http"
 	"net/url"
 	"strings"
-
-	"github.com/google/go-github/v61/github"
-
-	"github.com/stacklok/frizbee/pkg/interfaces"
 )
+
+var (
+	// ErrInvalidAction is returned when parsing the action fails.
+	ErrInvalidAction = errors.New("invalid action")
+
+	// ErrInvalidActionReference is returned when parsing the action reference fails.
+	ErrInvalidActionReference = errors.New("action reference is not a tag nor branch")
+)
+
+// isLocal returns true if the input is a local path.
+func isLocal(input string) bool {
+	return strings.HasPrefix(input, "./") || strings.HasPrefix(input, "../")
+}
+
+func shouldExclude(cfg *config.GHActions, input string) bool {
+	for _, e := range cfg.Exclude {
+		if e == input {
+			return true
+		}
+	}
+	return false
+}
+
+// ParseActionReference parses an action reference into action and reference.
+func ParseActionReference(input string) (action string, reference string, err error) {
+	frags := strings.Split(input, "@")
+	if len(frags) != 2 {
+		return "", "", fmt.Errorf("invalid action reference: %s", input)
+	}
+
+	return frags[0], frags[1], nil
+}
+
+// GetChecksum returns the checksum for a given action and tag.
+func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string) (string, error) {
+	owner, repo, err := parseActionFragments(action)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if we're using a checksum
+	if isChecksum(ref) {
+		return ref, nil
+	}
+
+	res, err := getCheckSumForTag(ctx, restIf, owner, repo, ref)
+	if err != nil {
+		return "", fmt.Errorf("failed to get checksum for tag: %w", err)
+	} else if res != "" {
+		return res, nil
+	}
+
+	// check branch
+	res, err = getCheckSumForBranch(ctx, restIf, owner, repo, ref)
+	if err != nil {
+		return "", fmt.Errorf("failed to get checksum for branch: %w", err)
+	} else if res != "" {
+		return res, nil
+	}
+
+	return "", ErrInvalidActionReference
+}
 
 func parseActionFragments(action string) (owner string, repo string, err error) {
 	frags := strings.Split(action, "/")
@@ -38,6 +85,11 @@ func parseActionFragments(action string) (owner string, repo string, err error) 
 	}
 
 	return frags[0], frags[1], nil
+}
+
+// isChecksum returns true if the input is a checksum.
+func isChecksum(ref string) bool {
+	return len(ref) == 40
 }
 
 func getCheckSumForTag(ctx context.Context, restIf interfaces.REST, owner, repo, tag string) (string, error) {

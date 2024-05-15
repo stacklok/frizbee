@@ -18,8 +18,7 @@ package version
 
 import (
 	"github.com/spf13/cobra"
-
-	"github.com/stacklok/frizbee/pkg/constants"
+	"github.com/stacklok/frizbee/internal/cli"
 )
 
 // CmdVersion is the Cobra command for the version command.
@@ -29,7 +28,7 @@ func CmdVersion() *cobra.Command {
 		Short: "Print frizbee CLI version",
 		Long:  "The frizbee version command prints the version of the frizbee CLI.",
 		Run: func(cmd *cobra.Command, _ []string) {
-			cmd.Println(constants.VerboseCLIVersion)
+			cmd.Println(cli.VerboseCLIVersion)
 		},
 	}
 }
