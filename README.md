@@ -47,10 +47,10 @@ Frizbee can be used to generate checksums for GitHub Actions. This is useful
 for verifying that the contents of a GitHub Action have not changed.
 
 To quickly replace the GitHub Action references for your project, you can use
-the `ghactions` command:
+the `action` command:
 
 ```bash
-frizbee ghactions -d path/to/your/repo/.github/workflows/
+frizbee action -d path/to/your/repo/.github/workflows/
 ```
 
 This will write all the replacements to the files in the directory provided.
@@ -65,10 +65,10 @@ It also supports exiting with a non-zero exit code if any replacements are found
 This is handy for CI/CD pipelines.
 
 If you want to generate the replacement for a single GitHub Action, you can use
-the `ghactions one` command:
+the `action one` command:
 
 ```bash
-frizbee ghactions one metal-toolbox/container-push/.github/workflows/container-push.yml@main
+frizbee action one metal-toolbox/container-push/.github/workflows/container-push.yml@main
 ```
 
 This is useful if you're developing and want to quickly test the replacement.
@@ -76,12 +76,20 @@ This is useful if you're developing and want to quickly test the replacement.
 ### Container Images
 
 Frizbee can be used to generate checksums for container images. This is useful
-for verifying that the contents of a container image have not changed.
+for verifying that the contents of a container image have not changed. This works
+for all yaml/yml and Dockerfile fies in the directory provided by the `-d` flag.
 
-To get the digest for a single image tag, you can use the `containerimage one` command:
+To quickly replace the container image references for your project, you can use
+the `image` command:
 
 ```bash
-frizbee containerimage one quay.io/stacklok/frizbee:latest
+frizbee image -d path/to/your/yaml/files/
+```
+
+To get the digest for a single image tag, you can use the `image one` command:
+
+```bash
+frizbee image one quay.io/stacklok/frizbee:latest
 ```
 
 This will print the image reference with the digest for the image tag provided.
