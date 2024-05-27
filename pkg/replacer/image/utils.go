@@ -24,16 +24,18 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/internal/store"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"strings"
 )
 
 // GetImageDigestFromRef returns the digest of a container image reference
 // from a name.Reference.
-func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache store.RefCacher, isDockerfileRef bool) (string, error) {
+func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	// Parse the image reference
 	ref, err := name.ParseReference(imageRef)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	opts := []remote.Option{
 		remote.WithContext(ctx),
@@ -45,7 +47,7 @@ func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache
 	if platform != "" {
 		platformSplit := strings.Split(platform, "/")
 		if len(platformSplit) != 2 {
-			return "", fmt.Errorf("platform must be in the format os/arch")
+			return nil, fmt.Errorf("platform must be in the format os/arch")
 		}
 		opts = append(opts, remote.WithPlatform(v1.Platform{
 			OS:           platformSplit[0],
@@ -62,28 +64,29 @@ func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache
 		}
 		desc, err := remote.Get(ref, opts...)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		digest = desc.Digest.String()
 		cache.Store(imageRef, digest)
 	} else {
 		desc, err := remote.Get(ref, opts...)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		digest = desc.Digest.String()
 	}
 
 	// Compare the digest with the reference and return the original reference if they already match
 	if digest == ref.Identifier() {
-		return imageRef, nil
+		return nil, fmt.Errorf("image already referenced by digest: %s %w", imageRef, ferrors.ErrReferenceSkipped)
 	}
 
-	// Return the image reference with the digest differently if it is a Dockerfile reference
-	if isDockerfileRef {
-		return fmt.Sprintf("%s:%s@%s", ref.Context().Name(), ref.Identifier(), digest), nil
-	}
-	return fmt.Sprintf("%s@%s # %s", ref.Context().Name(), digest, ref.Identifier()), nil
+	return &interfaces.EntityRef{
+		Name: ref.Context().Name(),
+		Ref:  digest,
+		Type: ReferenceType,
+		Tag:  ref.Identifier(),
+	}, nil
 }
 
 func shouldExclude(ref string) bool {

@@ -17,10 +17,12 @@
 package action
 
 import (
+	"fmt"
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -35,28 +37,28 @@ with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ frizbee action -d .github/workflows
+	$ frizbee action <.github/workflows> or <actions/checkout@v4>
 
 This will replace all tag or branch references in all GitHub Actions workflows
-for the given directory.
+for the given directory. Supports both directories and single references.
 
 ` + cli.TokenHelpText + "\n",
 		Aliases:      []string{"ghactions"}, // backwards compatibility
 		RunE:         replaceCmd,
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 	}
 
 	// flags
-	cli.DeclareFrizbeeFlags(cmd, ".github/workflows")
+	cli.DeclareFrizbeeFlags(cmd, false)
 
 	// sub-commands
-	cmd.AddCommand(CmdOne())
 	cmd.AddCommand(CmdList())
 
 	return cmd
 }
 
-func replaceCmd(cmd *cobra.Command, _ []string) error {
+func replaceCmd(cmd *cobra.Command, args []string) error {
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
@@ -74,12 +76,22 @@ func replaceCmd(cmd *cobra.Command, _ []string) error {
 		WithUserRegex(cliFlags.Regex).
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
-	// Replace the tags in the given directory
-	res, err := r.ParseGitHubActions(cmd.Context(), cliFlags.Dir)
-	if err != nil {
-		return err
+	if cli.IsPath(args[0]) {
+		dir := filepath.Clean(args[0])
+		// Replace the tags in the given directory
+		res, err := r.ParseGitHubActions(cmd.Context(), dir)
+		if err != nil {
+			return err
+		}
+		// Process the output files
+		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
+	} else {
+		// Replace the passed reference
+		res, err := r.ParseSingleGitHubAction(cmd.Context(), args[0])
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), res)
+		return nil
 	}
-
-	// Process the output files
-	return cliFlags.ProcessOutput(res.Processed, res.Modified)
 }

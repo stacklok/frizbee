@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/stacklok/frizbee/internal/store"
 	"github.com/stacklok/frizbee/pkg/config"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
 	"strings"
@@ -50,106 +51,102 @@ func (p *Parser) GetRegex() string {
 	return p.regex
 }
 
-func (p *Parser) Replace(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher, keepPrefix bool) (string, error) {
+func (p *Parser) Replace(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	var err error
+	var actionRef *interfaces.EntityRef
 
 	// Trim the uses prefix
-	actionRef := strings.TrimPrefix(matchedLine, prefixUses)
+	trimmedRef := strings.TrimPrefix(matchedLine, prefixUses)
 
 	// Determine if the action reference has a docker prefix
-	if strings.Contains(actionRef, prefixDocker) {
-		actionRef, err = p.replaceDocker(ctx, actionRef, restIf, cfg, cache, keepPrefix)
+	if strings.Contains(trimmedRef, prefixDocker) {
+		actionRef, err = p.replaceDocker(ctx, trimmedRef, restIf, cfg, cache)
 	} else {
-		actionRef, err = p.replaceAction(ctx, actionRef, restIf, cfg, cache, keepPrefix)
+		actionRef, err = p.replaceAction(ctx, trimmedRef, restIf, cfg, cache)
 	}
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Add back the uses prefix, if needed
-	if keepPrefix {
-		actionRef = fmt.Sprintf("%s%s", prefixUses, actionRef)
-	}
+	// Add back the uses prefix
+	actionRef.Prefix = fmt.Sprintf("%s%s", prefixUses, actionRef.Prefix)
 
 	// Return the new action reference
 	return actionRef, nil
 }
 
-func (p *Parser) replaceAction(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher, keepPrefix bool) (string, error) {
-	actionRef := matchedLine
+func (p *Parser) replaceAction(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 
 	// If the value is a local path or should be excluded, skip it
-	if isLocal(actionRef) || shouldExclude(&cfg.GHActions, actionRef) {
-		return matchedLine, nil
+	if isLocal(matchedLine) || shouldExclude(&cfg.GHActions, matchedLine) {
+		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
 	}
 
 	// Parse the action reference
-	act, ref, err := ParseActionReference(actionRef)
+	act, ref, err := ParseActionReference(matchedLine)
 	if err != nil {
-		return matchedLine, nil
+		return nil, fmt.Errorf("failed to parse action reference '%s': %w", matchedLine, err)
 	}
 
 	// Check if the parsed reference should be excluded
 	if shouldExclude(&cfg.GHActions, act) {
-		return matchedLine, nil
+		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
 	}
 	var sum string
 
 	// Check if we have a cache
 	if cache != nil {
 		// Check if we have a cached value
-		if val, ok := cache.Load(actionRef); ok {
+		if val, ok := cache.Load(matchedLine); ok {
 			sum = val
 		} else {
 			// Get the checksum for the action reference
 			sum, err = GetChecksum(ctx, restIf, act, ref)
 			if err != nil {
-				return matchedLine, nil
+				return nil, fmt.Errorf("failed to get checksum for action '%s': %w", matchedLine, err)
 			}
 			// Store the checksum in the cache
-			cache.Store(actionRef, sum)
+			cache.Store(matchedLine, sum)
 		}
 	} else {
 		// Get the checksum for the action reference
 		sum, err = GetChecksum(ctx, restIf, act, ref)
 		if err != nil {
-			return matchedLine, nil
+			return nil, fmt.Errorf("failed to get checksum for action '%s': %w", matchedLine, err)
 		}
 	}
-	// If the checksum is different from the reference, update the reference
-	// Otherwise, return the original line
-	if ref == sum {
-		return matchedLine, nil
-	}
 
-	return fmt.Sprintf("%s@%s # %s", act, sum, ref), nil
+	return &interfaces.EntityRef{
+		Name: act,
+		Ref:  sum,
+		Type: ReferenceType,
+		Tag:  ref,
+	}, nil
 }
 
-func (p *Parser) replaceDocker(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher, keepPrefix bool) (string, error) {
-	var err error
+func (p *Parser) replaceDocker(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	// Trim the docker prefix
-	actionRef := strings.TrimPrefix(matchedLine, prefixDocker)
+	trimmedRef := strings.TrimPrefix(matchedLine, prefixDocker)
 
 	// If the value is a local path or should be excluded, skip it
-	if isLocal(actionRef) || shouldExclude(&cfg.GHActions, actionRef) {
-		return matchedLine, nil
+	if isLocal(trimmedRef) || shouldExclude(&cfg.GHActions, trimmedRef) {
+		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
 	}
 
 	// Get the digest of the docker:// image reference
-	actionRef, err = image.GetImageDigestFromRef(ctx, actionRef, cfg.Platform, cache, false)
+	actionRef, err := image.GetImageDigestFromRef(ctx, trimmedRef, cfg.Platform, cache)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Check if the parsed reference should be excluded
-	if shouldExclude(&cfg.GHActions, actionRef) {
-		return matchedLine, nil
+	if shouldExclude(&cfg.GHActions, actionRef.Name) {
+		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
 	}
 
-	// Add back the docker prefix, if needed
-	if keepPrefix {
-		actionRef = fmt.Sprintf("%s%s", prefixDocker, actionRef)
-	}
+	// Add back the docker prefix
+	actionRef.Prefix = fmt.Sprintf("%s%s", prefixDocker, actionRef.Prefix)
+
 	return actionRef, nil
 }
 

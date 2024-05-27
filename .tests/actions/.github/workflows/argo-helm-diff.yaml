@@ -1,0 +1,179 @@
+name: Argo Helm Diff
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.yaml"
+    types:
+      - synchronize
+      - opened
+      - reopened
+
+jobs:
+  diff-helm-template:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      # charts published to private repos
+      # Note you also need to grant the infra repo access to those packages:
+      # https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#about-setting-visibility-and-access-permissions-for-packages
+      packages: read
+
+    strategy:
+      matrix:
+        # TODO: can we get this from a directory listing?
+        environment: ["staging2", "production", "sandbox"]
+
+    env:
+      # This finds "Application" kinds, then extracts the chart coordinates (repo, version, etc)
+      # and the valuesObject, and outputs them into a merged YAML document.  This assumes no collisions
+      # on the value keys `installName`, `chartName`, `chartRepo`, and `chartVersion`.
+      YQ_QUERY: 'select(.kind == "Application" and .spec.source.chart) |
+        .spec.source.targetRevision as $version | .spec.source.chart as $chart | .spec.source.repoURL as $repo |
+        .metadata.name as $name | .spec.destination.namespace as $namespace |
+        .spec.source.helm.valuesObject |
+        .installName = $name | .installNamespace = $namespace | .chartName = $chart | .chartRepo = $repo | .chartVersion = $version'
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Checkout pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.14.0"
+
+      - name: Log in to read private GitHub packages
+        run: helm registry login $BASE_REPO --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }}
+        env:
+          BASE_REPO: ghcr.io/stacklok
+
+      - name: create directories
+        run: |
+          mkdir -p base-tmp
+          mkdir -p pr-tmp
+
+      - name: Extract base helm values with yq
+        # TODO: would be nice to be able to install instead of using a container
+        uses: mikefarah/yq@master
+        with:
+          cmd: |
+            if [[ -e "base/argocd/${{ matrix.environment }}/cluster-config/" ]]; then
+              yq -s '"base-tmp/"  + (.chartName | sub("/", "_")) + "." + (.chartRepo | sub("/", "_")) + ".yaml"' "$YQ_QUERY" base/argocd/${{ matrix.environment }}/cluster-config/*.yaml
+            fi
+
+      - name: Compute helm templates for base
+        run: |
+          for f in base-tmp/*.yaml; do
+            INSTALL_NAME=$(grep installName: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            INSTALL_NS=$(grep installNamespace: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            CHART_NAME=$(grep chartName: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            CHART_REPO=$(grep chartRepo: $f | cut -d: -f2- | tr -d " '\""  | sed 's/#.*//')
+            CHART_VERSION=$(grep chartVersion: $f | cut -d: -f2- | tr -d " '\"" | sed 's/#.*//')
+            # Bare (OCI format) repos have a different format in helm template
+            if [[ "$CHART_REPO" != *":"* ]]; then
+              CHART_NAME="oci://$CHART_REPO/$CHART_NAME"
+              CHART_REPO=""
+            else
+              CHART_REPO="--repo $CHART_REPO"
+            fi
+            helm template --version "$CHART_VERSION" --namespace "$INSTALL_NS" $CHART_REPO $INSTALL_NAME $CHART_NAME -f $f > ${f%.yaml}.out || true  # OCI fetch not yet working
+            echo "Expanding $f: $?"
+          done
+
+      - name: Extract PR helm values with yq
+        # TODO: would be nice to be able to install instead of using a container
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -s '"pr-tmp/"  + (.chartName | sub("/", "_")) + "." + (.chartRepo | sub("/", "_")) + ".yaml"' "$YQ_QUERY" pr/argocd/${{ matrix.environment }}/cluster-config/*.yaml
+
+      - name: Compute helm templates for PR
+        run: |
+          for f in pr-tmp/*.yaml; do
+            INSTALL_NAME=$(grep installName: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            INSTALL_NS=$(grep installNamespace: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            CHART_NAME=$(grep chartName: $f | cut -d: -f2 | tr -d ' ' | sed 's/#.*//')
+            CHART_REPO=$(grep chartRepo: $f | cut -d: -f2- | tr -d " '\"" | sed 's/#.*//')
+            CHART_VERSION=$(grep chartVersion: $f | cut -d: -f2- | tr -d " '\"" | sed 's/#.*//')
+            # Bare (OCI format) repos have a different format in helm template
+            if [[ "$CHART_REPO" != *":"* ]]; then
+              CHART_NAME="oci://$CHART_REPO/$CHART_NAME"
+              CHART_REPO=""
+            else
+              CHART_REPO="--repo $CHART_REPO"
+            fi
+            helm template --version "$CHART_VERSION" --namespace "$INSTALL_NS" $CHART_REPO $INSTALL_NAME $CHART_NAME -f $f > ${f%.yaml}.out || true  # OCI fetch not yet working
+            echo "Expanding $f: $?"
+          done
+
+      - name: Diff template output
+        id: diff
+        run: |
+          # Remove *.yaml to only leave *.out
+          rm -f base-tmp/*.yaml pr-tmp/*.yaml
+
+          # We use a file rather than a GitHub output, because sometimes the diff is too big.
+          # See https://github.com/actions/github-script/issues/266#issuecomment-1158990264 for
+          # an example from a different project.
+          (diff -Nu base-tmp pr-tmp || echo "no diff" ) > yaml.diff
+
+          echo "Diff:"
+          cat yaml.diff
+
+      - name: Present diff
+        uses: actions/github-script@v7
+        id: diff-comment
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { readFile } = require("fs/promises");
+            let planComment = await readFile("yaml.diff", "utf8");
+
+            if (planComment.length > 65535) {
+              planComment = "TRUNCATED DIFF, see 'Diff template output' for full output:\n\n" + planComment.substring(0, 60000);
+            }
+
+            // 1. Retrieve existing bot comments for the PR
+
+            const output = `
+               ## Helm diffs \`${{ matrix.environment }}\`
+               <!-- BOT-GENERATED-HELM-OUTPUT ${{ matrix.environment }} -->
+               \`\`\`
+               ` + planComment + `
+               \`\`\`
+               `;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('<!-- BOT-GENERATED-HELM-OUTPUT ${{ matrix.environment }} -->')
+            });
+            if (botComment) {
+              github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+              });
+            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

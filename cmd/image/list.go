@@ -23,6 +23,7 @@ import (
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
+	"path/filepath"
 	"strconv"
 )
 
@@ -41,13 +42,16 @@ Example:
 		SilenceUsage: true,
 	}
 
-	cli.DeclareFrizbeeFlags(cmd, ".")
-	cmd.Flags().StringP("output", "o", "table", "output format. Can be 'json' or 'table'")
+	cli.DeclareFrizbeeFlags(cmd, true)
 
 	return cmd
 }
 
-func list(cmd *cobra.Command, _ []string) error {
+func list(cmd *cobra.Command, args []string) error {
+	dir := filepath.Clean(args[0])
+	if !cli.IsPath(dir) {
+		return fmt.Errorf("the provided argument is not a path")
+	}
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
@@ -65,7 +69,7 @@ func list(cmd *cobra.Command, _ []string) error {
 		WithUserRegex(cliFlags.Regex)
 
 	// List the references in the directory
-	res, err := r.ListContainerImages(cliFlags.Dir)
+	res, err := r.ListContainerImages(dir)
 	if err != nil {
 		return err
 	}

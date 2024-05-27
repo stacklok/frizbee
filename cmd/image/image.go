@@ -17,10 +17,12 @@
 package image
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
+	"path/filepath"
 )
 
 // CmdContainerImage represents the containers command
@@ -33,26 +35,26 @@ with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ frizbee image -d <path>
+	$ frizbee image <path-to-yaml-files> or <ghcr.io/stacklok/minder/server:latest>
 
 This will replace all tag or branch references in all yaml files for the given directory.
 `,
 		RunE:         replaceCmd,
 		SilenceUsage: true,
 		Aliases:      []string{"containerimage", "dockercompose", "compose"}, // backwards compatibility
+		Args:         cobra.ExactArgs(1),
 	}
 
 	// flags
-	cli.DeclareFrizbeeFlags(cmd, ".")
+	cli.DeclareFrizbeeFlags(cmd, false)
 
 	// sub-commands
-	cmd.AddCommand(CmdOne())
 	cmd.AddCommand(CmdList())
 
 	return cmd
 }
 
-func replaceCmd(cmd *cobra.Command, _ []string) error {
+func replaceCmd(cmd *cobra.Command, args []string) error {
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
@@ -69,12 +71,22 @@ func replaceCmd(cmd *cobra.Command, _ []string) error {
 	r := replacer.New(cfg).
 		WithUserRegex(cliFlags.Regex)
 
-	// Replace the tags in the directory
-	res, err := r.ParseContainerImages(cmd.Context(), cliFlags.Dir)
-	if err != nil {
-		return err
+	if cli.IsPath(args[0]) {
+		dir := filepath.Clean(args[0])
+		// Replace the tags in the directory
+		res, err := r.ParseContainerImages(cmd.Context(), dir)
+		if err != nil {
+			return err
+		}
+		// Process the output files
+		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
+	} else {
+		// Replace the passed reference
+		res, err := r.ParseSingleContainerImage(cmd.Context(), args[0])
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), res)
+		return nil
 	}
-
-	// Process the output files
-	return cliFlags.ProcessOutput(res.Processed, res.Modified)
 }

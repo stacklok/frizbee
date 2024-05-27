@@ -42,10 +42,10 @@ type ParserType string
 
 // Replacer replaces container image references in YAML files
 type Replacer struct {
+	regex  string
 	parser interfaces.Parser
 	interfaces.REST
 	config.Config
-	regex string
 }
 
 type ReplaceResult struct {
@@ -58,12 +58,14 @@ type ListResult struct {
 	Entities  []interfaces.EntityRef
 }
 
+// WithGitHubClient creates an authatenticated GitHub client
 func (r *Replacer) WithGitHubClient(token string) *Replacer {
 	client := ghrest.NewClient(token)
 	r.REST = client
 	return r
 }
 
+// WithUserRegex sets a user-provided regex for the parser
 func (r *Replacer) WithUserRegex(regex string) *Replacer {
 	r.regex = regex
 	return r
@@ -78,31 +80,45 @@ func New(cfg *config.Config) *Replacer {
 	}
 }
 
+// ParseSingleGitHubAction parses and returns the entity reference pinned by its digest
 func (r *Replacer) ParseSingleGitHubAction(ctx context.Context, entityRef string) (string, error) {
 	r.parser = action.New(r.regex)
-	return r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil, false)
+	ret, err := r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
+	if err != nil {
+		return "", err
+	}
+	return ret.Ref, nil
 }
 
+// ParseGitHubActions parses and replaces all GitHub actions references in yaml/yml files present the provided directory
 func (r *Replacer) ParseGitHubActions(ctx context.Context, dir string) (*ReplaceResult, error) {
 	r.parser = action.New(r.regex)
 	return r.parsePath(ctx, dir)
 }
 
+// ListGitHibActions lists all GitHub actions references in yaml/yml files present the provided directory
 func (r *Replacer) ListGitHibActions(dir string) (*ListResult, error) {
 	r.parser = action.New(r.regex)
 	return r.listReferences(dir)
 }
 
+// ParseSingleContainerImage parses and returns the entity reference pinned by its digest
 func (r *Replacer) ParseSingleContainerImage(ctx context.Context, entityRef string) (string, error) {
 	r.parser = image.New(r.regex)
-	return r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil, false)
+	ret, err := r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
+	if err != nil {
+		return "", err
+	}
+	return ret.Ref, nil
 }
 
+// ParseContainerImages parses and replaces all container image references in yaml, yml and dockerfiles present the provided directory
 func (r *Replacer) ParseContainerImages(ctx context.Context, dir string) (*ReplaceResult, error) {
 	r.parser = image.New(r.regex)
 	return r.parsePath(ctx, dir)
 }
 
+// ListContainerImages lists all container image references in yaml, yml and dockerfiles present the provided directory
 func (r *Replacer) ListContainerImages(dir string) (*ListResult, error) {
 	r.parser = image.New(r.regex)
 	return r.listReferences(dir)
@@ -133,21 +149,20 @@ func (r *Replacer) parsePath(ctx context.Context, dir string) (*ReplaceResult, e
 			// nolint:errcheck // ignore error
 			defer file.Close()
 
-			// Store the file name to the processed batch
-			res.Processed = append(res.Processed, path)
-
 			// Parse the content of the file and update the matching references
 			modified, updatedFile, err := r.parseAndReplaceReferencesInFile(ctx, file, cache)
 			if err != nil {
 				return fmt.Errorf("failed to modify references in %s: %w", path, err)
 			}
 
+			mu.Lock()
+			// Store the file name to the processed batch
+			res.Processed = append(res.Processed, path)
 			// Store the updated file content if it was modified
 			if modified {
-				mu.Lock()
 				res.Modified[path] = updatedFile
-				mu.Unlock()
 			}
+			mu.Unlock()
 
 			// All good
 			return nil
@@ -226,11 +241,12 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 }
 
 // parseAndReplaceReferencesInFile takes the given file reader and returns its content
-// after replacing all references to tags with the checksum of the tag.
-// The function returns an empty string and an error if it fails to process the file
+// after replacing all references to tags with the respective digests.
 // It also uses the provided cache to store the checksums.
 func (r *Replacer) parseAndReplaceReferencesInFile(ctx context.Context, f io.Reader, cache store.RefCacher) (bool, string, error) {
 	var contentBuilder strings.Builder
+	var ret *interfaces.EntityRef
+
 	modified := false
 
 	// Compile the regular expression
@@ -242,21 +258,21 @@ func (r *Replacer) parseAndReplaceReferencesInFile(ctx context.Context, f io.Rea
 	// Read the file line by line
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		var err error
-		var resultingLine string
 		line := scanner.Text()
-
 		// See if we can match an entity reference in the line
-		newLine := re.ReplaceAllStringFunc(line, func(entityRef string) string {
+		newLine := re.ReplaceAllStringFunc(line, func(matchedLine string) string {
 			// Modify the reference in the line
-			resultingLine, err = r.parser.Replace(ctx, entityRef, r.REST, r.Config, cache, true)
-			return resultingLine
+			ret, err = r.parser.Replace(ctx, matchedLine, r.REST, r.Config, cache)
+			if err != nil {
+				// Return the original line as we don't want to update it in case something errored out
+				return matchedLine
+			}
+			// Construct the new line
+			if strings.Contains(matchedLine, "FROM") {
+				return fmt.Sprintf("%s%s:%s@%s", ret.Prefix, ret.Name, ret.Tag, ret.Ref)
+			}
+			return fmt.Sprintf("%s%s@%s # %s", ret.Prefix, ret.Name, ret.Ref, ret.Tag)
 		})
-
-		// Handle the case where the reference could not be modified, i.e. failed to parse it correctly
-		if err != nil {
-			return false, "", fmt.Errorf("failed to modify reference in line: %s: %w", line, err)
-		}
 
 		// Check if the line was modified and set the modified flag to true if it was
 		if newLine != line {
@@ -276,10 +292,8 @@ func (r *Replacer) parseAndReplaceReferencesInFile(ctx context.Context, f io.Rea
 	return modified, contentBuilder.String(), nil
 }
 
-// listReferencesInFile takes the given file reader and returns its content
-// after replacing all references to tags with the checksum of the tag.
-// The function returns an empty string and an error if it fails to process the file
-// It also uses the provided cache to store the checksums.
+// listReferencesInFile takes the given file reader and returns a map of all
+// references, action or images, it found.
 func (r *Replacer) listReferencesInFile(f io.Reader) (mapset.Set[interfaces.EntityRef], error) {
 	found := mapset.NewSet[interfaces.EntityRef]()
 

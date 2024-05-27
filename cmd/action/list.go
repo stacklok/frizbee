@@ -24,6 +24,7 @@ import (
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -40,15 +41,19 @@ Example:
 		Aliases:      []string{"ls"},
 		RunE:         list,
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 	}
 
-	cli.DeclareFrizbeeFlags(cmd, ".github/workflows")
-	cmd.Flags().StringP("output", "o", "table", "output format. Can be 'json' or 'table'")
+	cli.DeclareFrizbeeFlags(cmd, true)
 
 	return cmd
 }
 
-func list(cmd *cobra.Command, _ []string) error {
+func list(cmd *cobra.Command, args []string) error {
+	dir := filepath.Clean(args[0])
+	if !cli.IsPath(dir) {
+		return fmt.Errorf("the provided argument is not a path")
+	}
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
@@ -67,7 +72,7 @@ func list(cmd *cobra.Command, _ []string) error {
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
 	// List the references in the directory
-	res, err := r.ListGitHibActions(cliFlags.Dir)
+	res, err := r.ListGitHibActions(dir)
 	if err != nil {
 		return err
 	}

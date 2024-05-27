@@ -1,0 +1,87 @@
+name: "Terraform Apply"
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+  schedule:
+    # 15:00 UTC = 6PM/7PM Eastern Europe, 8AM/9AM Pacific
+    - cron: "0 15 * * *"
+
+  workflow_dispatch:
+
+jobs:
+  apply_on_merge:
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    # We tried the following addition to the if statement to only run on
+    # merged PRs, but not on closed (cancelled) PRs, but GitHub stopped
+    # running the workflow on merge: https://github.com/stacklok/infra/issues/77
+    #
+    # github.ref == 'main' && github.event.pull_request.merged == true)
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      # Don't stop / cancel remaining applies if one apply fails
+      fail-fast: false
+      matrix:
+        # Note that these run in-order, so "iam" will start first.
+        # We could set `max-parallel` to 1 to get strict ordering
+        # TODO: can we get this list from a directory listing?
+        component:
+          [
+            "iam",
+            "sandbox",
+            "dashboards",
+            "dns",
+            "telemetry",
+            "staging2",
+            "production",
+          ]
+
+    env:
+      CONFIG_DIRECTORY: "./${{ matrix.component }}"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Role includes the account ID as an ARN
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_APPLY }}
+          aws-region: us-east-1
+
+      - name: Init
+        id: init
+        run: |
+          cd $CONFIG_DIRECTORY
+          terraform init
+
+      - name: Validate
+        id: validate
+        run: |
+          set -e
+
+          cd $CONFIG_DIRECTORY
+          terraform validate -no-color
+
+      - name: Apply
+        id: apply
+        run: |
+          set -e
+          cd $CONFIG_DIRECTORY
+          terraform apply -no-color -input=false -auto-approve

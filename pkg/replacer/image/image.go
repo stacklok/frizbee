@@ -20,13 +20,14 @@ import (
 	"fmt"
 	"github.com/stacklok/frizbee/internal/store"
 	"github.com/stacklok/frizbee/pkg/config"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"strings"
 )
 
 const (
 	// ContainerImageRegex is regular expression pattern to match container image usage in YAML
-	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+(:[^\s"']+)?(@[^\s"']+)?)["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)` // `\b(image|FROM)\s*:?(\s*([^\s]+))?`
+	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+|[^\s"']+)(:[^\s"']+)?(@[^\s"']+)?["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)` // `image\s*:\s*["']?([^\s"']+/[^\s"']+(:[^\s"']+)?(@[^\s"']+)?)["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)` // `\b(image|FROM)\s*:?(\s*([^\s]+))?`
 	prefixFROM          = "FROM "
 	prefixImage         = "image: "
 	ReferenceType       = "container"
@@ -49,42 +50,37 @@ func (p *Parser) GetRegex() string {
 	return p.regex
 }
 
-func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher, keepPrefix bool) (string, error) {
+func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	// Trim the prefix
 	hasFROMPrefix := false
-	imageRef := matchedLine
 
 	// Check if the image reference has the FROM prefix, i.e. Dockerfile
-	if strings.HasPrefix(imageRef, prefixFROM) {
-		imageRef = strings.TrimPrefix(imageRef, prefixFROM)
+	if strings.HasPrefix(matchedLine, prefixFROM) {
+		matchedLine = strings.TrimPrefix(matchedLine, prefixFROM)
 		// Check if the image reference should be excluded, i.e. scratch
-		if shouldExclude(imageRef) {
-			return matchedLine, nil
+		if shouldExclude(matchedLine) {
+			return nil, fmt.Errorf("image reference %s should be excluded - %w", matchedLine, ferrors.ErrReferenceSkipped)
 		}
 		hasFROMPrefix = true
-	} else if strings.HasPrefix(imageRef, prefixImage) {
+	} else if strings.HasPrefix(matchedLine, prefixImage) {
 		// Check if the image reference has the image prefix, i.e. Kubernetes or Docker Compose YAML
-		imageRef = strings.TrimPrefix(imageRef, prefixImage)
+		matchedLine = strings.TrimPrefix(matchedLine, prefixImage)
 	}
 
 	// Get the digest of the image reference
-	imageRefWithDigest, err := GetImageDigestFromRef(ctx, imageRef, cfg.Platform, cache, hasFROMPrefix)
+	imageRefWithDigest, err := GetImageDigestFromRef(ctx, matchedLine, cfg.Platform, cache)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Add the prefix back, if needed
-	if keepPrefix {
-		if hasFROMPrefix {
-			imageRefWithDigest = prefixFROM + imageRefWithDigest
-		} else {
-			imageRefWithDigest = prefixImage + imageRefWithDigest
-		}
-		// Return the modified line with the prefix
-		return imageRefWithDigest, nil
-
+	// Add the prefix back
+	if hasFROMPrefix {
+		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixFROM, imageRefWithDigest.Prefix)
+	} else {
+		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixImage, imageRefWithDigest.Prefix)
 	}
-	// Return the modified line without the prefix
+
+	// Return the reference
 	return imageRefWithDigest, nil
 }
 

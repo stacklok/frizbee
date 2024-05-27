@@ -24,14 +24,16 @@ import (
 
 // EntityRef represents an action reference.
 type EntityRef struct {
-	Name string `json:"name"`
-	Ref  string `json:"ref"`
-	Type string `json:"type"`
+	Name   string `json:"name"`
+	Ref    string `json:"ref"`
+	Type   string `json:"type"`
+	Tag    string `json:"tag"`
+	Prefix string `json:"prefix"`
 }
 
 type Parser interface {
 	GetRegex() string
-	Replace(ctx context.Context, matchedLine string, restIf REST, cfg config.Config, cache store.RefCacher, keepPrefix bool) (string, error)
+	Replace(ctx context.Context, matchedLine string, restIf REST, cfg config.Config, cache store.RefCacher) (*EntityRef, error)
 	ConvertToEntityRef(reference string) (*EntityRef, error)
 }
 

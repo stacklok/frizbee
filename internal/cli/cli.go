@@ -51,7 +51,6 @@ Dirty: {{.Modified}}
 // Helper is a common struct for implementing a CLI command that replaces
 // files.
 type Helper struct {
-	Dir           string
 	DryRun        bool
 	Quiet         bool
 	ErrOnModified bool
@@ -117,10 +116,6 @@ func (vvs *versionInfo) String() string {
 }
 
 func NewHelper(cmd *cobra.Command) (*Helper, error) {
-	dir := "."
-	if cmd.Flags().Lookup("dir") != nil {
-		dir = removeTrailingSlash(cmd.Flag("dir").Value.String())
-	}
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dry-run flag: %w", err)
@@ -140,7 +135,6 @@ func NewHelper(cmd *cobra.Command) (*Helper, error) {
 
 	return &Helper{
 		Cmd:           cmd,
-		Dir:           dir,
 		DryRun:        dryRun,
 		ErrOnModified: errOnModified,
 		Quiet:         quiet,
@@ -149,17 +143,15 @@ func NewHelper(cmd *cobra.Command) (*Helper, error) {
 }
 
 // DeclareFrizbeeFlags declares the flags common to all replacer commands.
-func DeclareFrizbeeFlags(cmd *cobra.Command, defaultDir string) {
+func DeclareFrizbeeFlags(cmd *cobra.Command, enableOutput bool) {
 	cmd.Flags().BoolP("dry-run", "n", false, "don't modify files")
 	cmd.Flags().BoolP("quiet", "q", false, "don't print anything")
 	cmd.Flags().BoolP("error", "e", false, "exit with error code if any file is modified")
 	cmd.Flags().StringP("regex", "r", "", "regex to match artifact references")
 	cmd.Flags().StringP("platform", "p", "", "platform to match artifact references, e.g. linux/amd64")
-
-	if defaultDir != "" {
-		cmd.Flags().StringP("dir", "d", defaultDir, "directory path to parse")
+	if enableOutput {
+		cmd.Flags().StringP("output", "o", "table", "output format. Can be 'json' or 'table'")
 	}
-
 }
 
 // Logf logs the given message to the given command's stderr if the command is
@@ -174,8 +166,8 @@ func (r *Helper) Logf(format string, args ...interface{}) {
 // If the command is quiet, the output is discarded.
 // If the command is a dry run, the output is written to the command's stdout.
 // Otherwise, the output is written to the given filesystem.
-func (r *Helper) ProcessOutput(processed []string, modified map[string]string) error {
-	basedir := filepath.Dir(r.Dir)
+func (r *Helper) ProcessOutput(path string, processed []string, modified map[string]string) error {
+	basedir := filepath.Dir(path)
 	bfs := osfs.New(basedir, osfs.WithBoundOS())
 	var out io.Writer
 	for _, path := range processed {
@@ -214,14 +206,10 @@ func (r *Helper) ProcessOutput(processed []string, modified map[string]string) e
 	return nil
 }
 
-// removeTrailingSlash processes the given directory name for use with
-// go-billy filesystems.
-func removeTrailingSlash(dir string) string {
-	// remove trailing / from dir. This doesn't play well with
-	// the go-billy filesystem and walker we use.
-	if dir[len(dir)-1] == '/' {
-		return dir[:len(dir)-1]
+func IsPath(pathOrRef string) bool {
+	_, err := os.Stat(pathOrRef)
+	if err == nil {
+		return true
 	}
-
-	return dir
+	return false
 }

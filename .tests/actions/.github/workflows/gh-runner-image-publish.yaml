@@ -1,0 +1,67 @@
+---
+name: GH Runner image publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GH_RUNNER_IMAGE: ghcr.io/stacklok/gh-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.3.0
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute version number
+        id: version-string
+        run: |
+          DATE="$(date +%Y%m%d)"
+          COMMIT="$(git rev-parse --short HEAD)"
+          echo "tag=0.$DATE.$GITHUB_RUN_NUMBER+ref.$COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Set container metadata
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5
+        id: docker-metadata
+        with:
+          images: ${{ env.GH_RUNNER_IMAGE }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.description="This is a container for the Stacklok GitHub Runner image"
+            org.opencontainers.image.title="Stacklok GitHub Runner Image"
+            org.opencontainers.image.vendor="Stacklok Inc."
+            org.opencontainers.image.version=${{ github.sha }}
+          flavor: |
+            latest=true
+          # Even if tags are floating, it's handy and user-friendly to have a
+          # matching tag for each build. This way, we can search for the digest
+          # and verify that it's the same as the digest in the Helm chart.
+          tags: |
+            type=raw,value=${{ steps.version-string.outputs.tag }}
+
+      - name: Build image
+        id: image-build
+        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          file: ./images/gh-runner/Dockerfile
+          tags: ${{ steps.docker-metadata.outputs.tags }}
+          labels: ${{ steps.docker-metadata.outputs.labels }}
