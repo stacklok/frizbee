@@ -40,16 +40,25 @@ const (
 // Parser is a struct to replace container image references with digests
 type Parser struct {
 	regex string
+	cache store.RefCacher
 }
 
 // New creates a new Parser
-func New(regex string) *Parser {
-	if regex == "" {
-		regex = ContainerImageRegex
-	}
+func New() *Parser {
 	return &Parser{
-		regex: regex,
+		regex: ContainerImageRegex,
+		cache: store.NewRefCacher(),
 	}
+}
+
+// SetCache sets the cache to store the image references
+func (p *Parser) SetCache(cache store.RefCacher) {
+	p.cache = cache
+}
+
+// SetRegex sets the regular expression pattern to match container image usage
+func (p *Parser) SetRegex(regex string) {
+	p.regex = regex
 }
 
 // GetRegex returns the regular expression pattern to match container image usage
@@ -58,8 +67,12 @@ func (p *Parser) GetRegex() string {
 }
 
 // Replace replaces the container image reference with the digest
-func (_ *Parser) Replace(ctx context.Context,
-	matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
+func (p *Parser) Replace(
+	ctx context.Context,
+	matchedLine string,
+	_ interfaces.REST,
+	cfg config.Config,
+) (*interfaces.EntityRef, error) {
 	// Trim the prefix
 	hasFROMPrefix := false
 	hasImagePrefix := false
@@ -78,7 +91,7 @@ func (_ *Parser) Replace(ctx context.Context,
 	}
 
 	// Get the digest of the image reference
-	imageRefWithDigest, err := GetImageDigestFromRef(ctx, matchedLine, cfg.Platform, cache)
+	imageRefWithDigest, err := GetImageDigestFromRef(ctx, matchedLine, cfg.Platform, p.cache)
 	if err != nil {
 		return nil, err
 	}

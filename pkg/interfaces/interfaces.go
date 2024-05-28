@@ -35,8 +35,10 @@ type EntityRef struct {
 
 // Parser is an interface to replace references with digests
 type Parser interface {
+	SetCache(cache store.RefCacher)
+	SetRegex(regex string)
 	GetRegex() string
-	Replace(ctx context.Context, matchedLine string, restIf REST, cfg config.Config, cache store.RefCacher) (*EntityRef, error)
+	Replace(ctx context.Context, matchedLine string, restIf REST, cfg config.Config) (*EntityRef, error)
 	ConvertToEntityRef(reference string) (*EntityRef, error)
 }
 

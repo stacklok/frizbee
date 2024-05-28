@@ -40,16 +40,25 @@ const (
 // Parser is a struct to replace action references with digests
 type Parser struct {
 	regex string
+	cache store.RefCacher
 }
 
 // New creates a new Parser
-func New(regex string) *Parser {
-	if regex == "" {
-		regex = GitHubActionsRegex
-	}
+func New() *Parser {
 	return &Parser{
-		regex: regex,
+		regex: GitHubActionsRegex,
+		cache: store.NewRefCacher(),
 	}
+}
+
+// SetCache returns the regular expression pattern to match GitHub Actions usage
+func (p *Parser) SetCache(cache store.RefCacher) {
+	p.cache = cache
+}
+
+// SetRegex returns the regular expression pattern to match GitHub Actions usage
+func (p *Parser) SetRegex(regex string) {
+	p.regex = regex
 }
 
 // GetRegex returns the regular expression pattern to match GitHub Actions usage
@@ -63,7 +72,6 @@ func (p *Parser) Replace(
 	matchedLine string,
 	restIf interfaces.REST,
 	cfg config.Config,
-	cache store.RefCacher,
 ) (*interfaces.EntityRef, error) {
 	var err error
 	var actionRef *interfaces.EntityRef
@@ -76,9 +84,9 @@ func (p *Parser) Replace(
 	}
 	// Determine if the action reference has a docker prefix
 	if strings.HasPrefix(matchedLine, prefixDocker) {
-		actionRef, err = p.replaceDocker(ctx, matchedLine, restIf, cfg, cache)
+		actionRef, err = p.replaceDocker(ctx, matchedLine, restIf, cfg)
 	} else {
-		actionRef, err = p.replaceAction(ctx, matchedLine, restIf, cfg, cache)
+		actionRef, err = p.replaceAction(ctx, matchedLine, restIf, cfg)
 	}
 	if err != nil {
 		return nil, err
@@ -93,12 +101,11 @@ func (p *Parser) Replace(
 	return actionRef, nil
 }
 
-func (_ *Parser) replaceAction(
+func (p *Parser) replaceAction(
 	ctx context.Context,
 	matchedLine string,
 	restIf interfaces.REST,
 	cfg config.Config,
-	cache store.RefCacher,
 ) (*interfaces.EntityRef, error) {
 
 	// If the value is a local path or should be excluded, skip it
@@ -119,9 +126,9 @@ func (_ *Parser) replaceAction(
 	var sum string
 
 	// Check if we have a cache
-	if cache != nil {
+	if p.cache != nil {
 		// Check if we have a cached value
-		if val, ok := cache.Load(matchedLine); ok {
+		if val, ok := p.cache.Load(matchedLine); ok {
 			sum = val
 		} else {
 			// Get the checksum for the action reference
@@ -130,7 +137,7 @@ func (_ *Parser) replaceAction(
 				return nil, fmt.Errorf("failed to get checksum for action '%s': %w", matchedLine, err)
 			}
 			// Store the checksum in the cache
-			cache.Store(matchedLine, sum)
+			p.cache.Store(matchedLine, sum)
 		}
 	} else {
 		// Get the checksum for the action reference
@@ -153,12 +160,11 @@ func (_ *Parser) replaceAction(
 	}, nil
 }
 
-func (_ *Parser) replaceDocker(
+func (p *Parser) replaceDocker(
 	ctx context.Context,
 	matchedLine string,
 	_ interfaces.REST,
 	cfg config.Config,
-	cache store.RefCacher,
 ) (*interfaces.EntityRef, error) {
 	// Trim the docker prefix
 	trimmedRef := strings.TrimPrefix(matchedLine, prefixDocker)
@@ -169,7 +175,7 @@ func (_ *Parser) replaceDocker(
 	}
 
 	// Get the digest of the docker:// image reference
-	actionRef, err := image.GetImageDigestFromRef(ctx, trimmedRef, cfg.Platform, cache)
+	actionRef, err := image.GetImageDigestFromRef(ctx, trimmedRef, cfg.Platform, p.cache)
 	if err != nil {
 		return nil, err
 	}

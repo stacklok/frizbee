@@ -127,8 +127,8 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := New(&config.Config{})
-			got, err := r.ParseContainerImageString(ctx, tt.args.refstr)
+			r := NewImageReplacer(&config.Config{})
+			got, err := r.ParseString(ctx, tt.args.refstr)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
@@ -296,8 +296,8 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			r := New(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
-			got, err := r.ParseGitHubActionString(context.Background(), tt.args.action)
+			r := NewActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
+			got, err := r.ParseString(context.Background(), tt.args.action)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
 				require.Empty(t, got, "Wanted empty string, got %v", got)
@@ -355,8 +355,8 @@ services:
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := New(&config.Config{})
-			modified, newContent, err := r.ParseContainerImagesInFile(ctx, strings.NewReader(tt.before), nil)
+			r := NewImageReplacer(&config.Config{})
+			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
 				assert.True(t, modified)
@@ -435,8 +435,8 @@ jobs:
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := New(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
-			modified, newContent, err := r.ParseGitHubActionsInFile(ctx, strings.NewReader(tt.before), nil)
+			r := NewActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
 				assert.True(t, modified)

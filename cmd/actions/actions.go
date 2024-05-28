@@ -82,14 +82,14 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a new replacer
-	r := replacer.New(cfg).
+	r := replacer.NewActionsReplacer(cfg).
 		WithUserRegex(cliFlags.Regex).
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
 	if cli.IsPath(pathOrRef) {
 		dir := filepath.Clean(pathOrRef)
 		// Replace the tags in the given directory
-		res, err := r.ParseGitHubActionsInPath(cmd.Context(), dir)
+		res, err := r.ParsePath(cmd.Context(), dir)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
 	}
 	// Replace the passed reference
-	res, err := r.ParseGitHubActionString(cmd.Context(), pathOrRef)
+	res, err := r.ParseString(cmd.Context(), pathOrRef)
 	if err != nil {
 		if errors.Is(err, ferrors.ErrReferenceSkipped) {
 			fmt.Fprintln(cmd.OutOrStdout(), pathOrRef) // nolint:errcheck

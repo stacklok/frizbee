@@ -69,11 +69,11 @@ func list(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a new replacer
-	r := replacer.New(cfg).
+	r := replacer.NewImageReplacer(cfg).
 		WithUserRegex(cliFlags.Regex)
 
 	// List the references in the directory
-	res, err := r.ListContainerImagesInPath(dir)
+	res, err := r.ListPath(dir)
 	if err != nil {
 		return err
 	}
