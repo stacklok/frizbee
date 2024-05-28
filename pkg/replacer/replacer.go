@@ -58,7 +58,7 @@ type ListResult struct {
 	Entities  []interfaces.EntityRef
 }
 
-// WithGitHubClient creates an authatenticated GitHub client
+// WithGitHubClient creates an authenticated GitHub client
 func (r *Replacer) WithGitHubClient(token string) *Replacer {
 	client := ghrest.NewClient(token)
 	r.REST = client
@@ -71,8 +71,7 @@ func (r *Replacer) WithUserRegex(regex string) *Replacer {
 	return r
 }
 
-// New creates a new FileReplacer from the given
-// command-line arguments and options
+// New creates a new Replacer
 func New(cfg *config.Config) *Replacer {
 	// Return the replacer
 	return &Replacer{
@@ -80,48 +79,90 @@ func New(cfg *config.Config) *Replacer {
 	}
 }
 
-// ParseSingleGitHubAction parses and returns the entity reference pinned by its digest
-func (r *Replacer) ParseSingleGitHubAction(ctx context.Context, entityRef string) (string, error) {
+// ParseGitHubActionString parses and returns the referenced entity pinned by its digest
+func (r *Replacer) ParseGitHubActionString(ctx context.Context, entityRef string) (*interfaces.EntityRef, error) {
 	r.parser = action.New(r.regex)
-	ret, err := r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
-	if err != nil {
-		return "", err
-	}
-	return ret.Ref, nil
+	return r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
 }
 
-// ParseGitHubActions parses and replaces all GitHub actions references in yaml/yml files present the provided directory
-func (r *Replacer) ParseGitHubActions(ctx context.Context, dir string) (*ReplaceResult, error) {
+// ParseGitHubActionsInPath parses and replaces all GitHub actions references in the provided directory
+func (r *Replacer) ParseGitHubActionsInPath(ctx context.Context, dir string) (*ReplaceResult, error) {
 	r.parser = action.New(r.regex)
 	return r.parsePath(ctx, dir)
 }
 
-// ListGitHibActions lists all GitHub actions references in yaml/yml files present the provided directory
-func (r *Replacer) ListGitHibActions(dir string) (*ListResult, error) {
+// ParseGitHubActionsInFile parses and replaces all GitHub actions references in the provided file
+func (r *Replacer) ParseGitHubActionsInFile(ctx context.Context, f io.Reader, cache store.RefCacher) (bool, string, error) {
+	r.parser = action.New(r.regex)
+	return r.parseAndReplaceReferencesInFile(ctx, f, cache)
+}
+
+// ListGitHibActionsInPath lists all GitHub actions references in the provided directory
+func (r *Replacer) ListGitHibActionsInPath(dir string) (*ListResult, error) {
 	r.parser = action.New(r.regex)
 	return r.listReferences(dir)
 }
 
-// ParseSingleContainerImage parses and returns the entity reference pinned by its digest
-func (r *Replacer) ParseSingleContainerImage(ctx context.Context, entityRef string) (string, error) {
-	r.parser = image.New(r.regex)
-	ret, err := r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
+// ListGitHibActionsInFile lists all GitHub actions references in the provided file
+func (r *Replacer) ListGitHibActionsInFile(f io.Reader) (*ListResult, error) {
+	r.parser = action.New(r.regex)
+	found, err := r.listReferencesInFile(f)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return ret.Ref, nil
+	res := &ListResult{}
+	res.Entities = found.ToSlice()
+
+	// Sort the slice
+	sort.Slice(res.Entities, func(i, j int) bool {
+		return res.Entities[i].Name < res.Entities[j].Name
+	})
+
+	// All good
+	return res, nil
 }
 
-// ParseContainerImages parses and replaces all container image references in yaml, yml and dockerfiles present the provided directory
-func (r *Replacer) ParseContainerImages(ctx context.Context, dir string) (*ReplaceResult, error) {
+// ParseContainerImageString parses and returns the referenced entity pinned by its digest
+func (r *Replacer) ParseContainerImageString(ctx context.Context, entityRef string) (*interfaces.EntityRef, error) {
+	r.parser = image.New(r.regex)
+	return r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
+}
+
+// ParseContainerImagesInPath parses and replaces all container image references in the provided directory
+func (r *Replacer) ParseContainerImagesInPath(ctx context.Context, dir string) (*ReplaceResult, error) {
 	r.parser = image.New(r.regex)
 	return r.parsePath(ctx, dir)
 }
 
-// ListContainerImages lists all container image references in yaml, yml and dockerfiles present the provided directory
-func (r *Replacer) ListContainerImages(dir string) (*ListResult, error) {
+// ParseContainerImagesInFile parses and replaces all container image references in the provided file
+func (r *Replacer) ParseContainerImagesInFile(ctx context.Context, f io.Reader, cache store.RefCacher) (bool, string, error) {
+	r.parser = image.New(r.regex)
+	return r.parseAndReplaceReferencesInFile(ctx, f, cache)
+}
+
+// ListContainerImagesInPath lists all container image references in yaml, yml and dockerfiles present the provided directory
+func (r *Replacer) ListContainerImagesInPath(dir string) (*ListResult, error) {
 	r.parser = image.New(r.regex)
 	return r.listReferences(dir)
+}
+
+// ListContainerImagesInFile lists all container image references in yaml, yml or dockerfile
+func (r *Replacer) ListContainerImagesInFile(f io.Reader) (*ListResult, error) {
+	r.parser = image.New(r.regex)
+	found, err := r.listReferencesInFile(f)
+	if err != nil {
+		return nil, err
+	}
+	res := &ListResult{}
+	res.Entities = found.ToSlice()
+
+	// Sort the slice
+	sort.Slice(res.Entities, func(i, j int) bool {
+		return res.Entities[i].Name < res.Entities[j].Name
+	})
+
+	// All good
+	return res, nil
 }
 
 func (r *Replacer) parsePath(ctx context.Context, dir string) (*ReplaceResult, error) {
@@ -196,7 +237,7 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 
 	found := mapset.NewSet[interfaces.EntityRef]()
 
-	// Traverse all YAML/YML files in dir
+	// Traverse all related files
 	err := traverse.TraverseYAMLDockerfiles(bfs, base, func(path string) error {
 		eg.Go(func() error {
 			file, err := bfs.Open(path)
@@ -206,17 +247,18 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 			// nolint:errcheck // ignore error
 			defer file.Close()
 
-			// Store the file name to the processed batch
-			res.Processed = append(res.Processed, path)
-
 			// Parse the content of the file and listReferences the matching references
 			foundRefs, err := r.listReferencesInFile(file)
 			if err != nil {
 				return fmt.Errorf("failed to listReferences references in %s: %w", path, err)
 			}
+
+			// Store the file name to the processed batch
 			mu.Lock()
+			res.Processed = append(res.Processed, path)
 			found = found.Union(foundRefs)
 			mu.Unlock()
+
 			// All good
 			return nil
 		})
@@ -231,7 +273,7 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 	}
 	res.Entities = found.ToSlice()
 
-	// Sort the slice by the Name field using sort.Slice
+	// Sort the slice
 	sort.Slice(res.Entities, func(i, j int) bool {
 		return res.Entities[i].Name < res.Entities[j].Name
 	})

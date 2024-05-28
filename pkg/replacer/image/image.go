@@ -53,7 +53,7 @@ func (p *Parser) GetRegex() string {
 func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	// Trim the prefix
 	hasFROMPrefix := false
-
+	hasImagePrefix := false
 	// Check if the image reference has the FROM prefix, i.e. Dockerfile
 	if strings.HasPrefix(matchedLine, prefixFROM) {
 		matchedLine = strings.TrimPrefix(matchedLine, prefixFROM)
@@ -65,6 +65,7 @@ func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.R
 	} else if strings.HasPrefix(matchedLine, prefixImage) {
 		// Check if the image reference has the image prefix, i.e. Kubernetes or Docker Compose YAML
 		matchedLine = strings.TrimPrefix(matchedLine, prefixImage)
+		hasImagePrefix = true
 	}
 
 	// Get the digest of the image reference
@@ -76,7 +77,7 @@ func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.R
 	// Add the prefix back
 	if hasFROMPrefix {
 		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixFROM, imageRefWithDigest.Prefix)
-	} else {
+	} else if hasImagePrefix {
 		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixImage, imageRefWithDigest.Prefix)
 	}
 

@@ -54,22 +54,27 @@ func (p *Parser) GetRegex() string {
 func (p *Parser) Replace(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	var err error
 	var actionRef *interfaces.EntityRef
+	hasUsesPrefix := false
 
 	// Trim the uses prefix
-	trimmedRef := strings.TrimPrefix(matchedLine, prefixUses)
-
+	if strings.HasPrefix(matchedLine, prefixUses) {
+		matchedLine = strings.TrimPrefix(matchedLine, prefixUses)
+		hasUsesPrefix = true
+	}
 	// Determine if the action reference has a docker prefix
-	if strings.Contains(trimmedRef, prefixDocker) {
-		actionRef, err = p.replaceDocker(ctx, trimmedRef, restIf, cfg, cache)
+	if strings.HasPrefix(matchedLine, prefixDocker) {
+		actionRef, err = p.replaceDocker(ctx, matchedLine, restIf, cfg, cache)
 	} else {
-		actionRef, err = p.replaceAction(ctx, trimmedRef, restIf, cfg, cache)
+		actionRef, err = p.replaceAction(ctx, matchedLine, restIf, cfg, cache)
 	}
 	if err != nil {
 		return nil, err
 	}
 
 	// Add back the uses prefix
-	actionRef.Prefix = fmt.Sprintf("%s%s", prefixUses, actionRef.Prefix)
+	if hasUsesPrefix {
+		actionRef.Prefix = fmt.Sprintf("%s%s", prefixUses, actionRef.Prefix)
+	}
 
 	// Return the new action reference
 	return actionRef, nil
@@ -145,7 +150,9 @@ func (p *Parser) replaceDocker(ctx context.Context, matchedLine string, _ interf
 	}
 
 	// Add back the docker prefix
-	actionRef.Prefix = fmt.Sprintf("%s%s", prefixDocker, actionRef.Prefix)
+	if strings.HasPrefix(matchedLine, prefixDocker) {
+		actionRef.Prefix = fmt.Sprintf("%s%s", prefixDocker, actionRef.Prefix)
+	}
 
 	return actionRef, nil
 }

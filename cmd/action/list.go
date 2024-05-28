@@ -72,7 +72,7 @@ func list(cmd *cobra.Command, args []string) error {
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
 	// List the references in the directory
-	res, err := r.ListGitHibActions(dir)
+	res, err := r.ListGitHibActionsInPath(dir)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func list(cmd *cobra.Command, args []string) error {
 		}
 		jsonString := string(jsonBytes)
 
-		fmt.Fprintf(cmd.OutOrStdout(), "%s\n", jsonString)
+		fmt.Fprintln(cmd.OutOrStdout(), jsonString)
 		return nil
 	case "table":
 		table := tablewriter.NewWriter(cmd.OutOrStdout())

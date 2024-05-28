@@ -74,7 +74,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	if cli.IsPath(args[0]) {
 		dir := filepath.Clean(args[0])
 		// Replace the tags in the directory
-		res, err := r.ParseContainerImages(cmd.Context(), dir)
+		res, err := r.ParseContainerImagesInPath(cmd.Context(), dir)
 		if err != nil {
 			return err
 		}
@@ -82,11 +82,11 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
 	} else {
 		// Replace the passed reference
-		res, err := r.ParseSingleContainerImage(cmd.Context(), args[0])
+		res, err := r.ParseContainerImageString(cmd.Context(), args[0])
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), res)
+		fmt.Fprintln(cmd.OutOrStdout(), fmt.Sprintf("%s@%s", res.Name, res.Ref))
 		return nil
 	}
 }

@@ -69,7 +69,7 @@ func list(cmd *cobra.Command, args []string) error {
 		WithUserRegex(cliFlags.Regex)
 
 	// List the references in the directory
-	res, err := r.ListContainerImages(dir)
+	res, err := r.ListContainerImagesInPath(dir)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func list(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		jsonString := string(jsonBytes)
-		fmt.Fprintf(cmd.OutOrStdout(), "%s\n", jsonString)
+		fmt.Fprintln(cmd.OutOrStdout(), jsonString)
 		return nil
 	case "table":
 		table := tablewriter.NewWriter(cmd.OutOrStdout())
