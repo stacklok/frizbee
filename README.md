@@ -39,7 +39,7 @@ brew install stacklok/tap/frizbee
 winget install stacklok.frizbee
 ```
 
-## Usage
+## Usage - CLI
 
 ### GitHub Actions
 
@@ -50,7 +50,7 @@ To quickly replace the GitHub Action references for your project, you can use
 the `action` command:
 
 ```bash
-frizbee action -d path/to/your/repo/.github/workflows/
+frizbee action path/to/your/repo/.github/workflows/
 ```
 
 This will write all the replacements to the files in the directory provided.
@@ -64,11 +64,11 @@ to stdout instead of writing them to the files.
 It also supports exiting with a non-zero exit code if any replacements are found. 
 This is handy for CI/CD pipelines.
 
-If you want to generate the replacement for a single GitHub Action, you can use
-the `action one` command:
+If you want to generate the replacement for a single GitHub Action, you can use the
+same command:
 
 ```bash
-frizbee action one metal-toolbox/container-push/.github/workflows/container-push.yml@main
+frizbee action metal-toolbox/container-push/.github/workflows/container-push.yml@main
 ```
 
 This is useful if you're developing and want to quickly test the replacement.
@@ -83,17 +83,54 @@ To quickly replace the container image references for your project, you can use
 the `image` command:
 
 ```bash
-frizbee image -d path/to/your/yaml/files/
+frizbee image path/to/your/yaml/files/
 ```
 
-To get the digest for a single image tag, you can use the `image one` command:
+To get the digest for a single image tag, you can use the same command:
 
 ```bash
-frizbee image one quay.io/stacklok/frizbee:latest
+frizbee image ghcr.io/stacklok/minder/server:latest
 ```
 
 This will print the image reference with the digest for the image tag provided.
 
+## Usage - Library
+
+Frizbee can also be used as a library. The library provides a set of functions
+for working with tags and checksums. Here are a few examples of how you can use
+the library:
+
+### GitHub Actions
+
+```go
+// Create a new replacer
+r := replacer.New(cfg)
+...
+// Parse a single GitHub Action reference
+ret, err := r.ParseGitHubActionString(ctx, ghActionRef)
+...
+// Parse all GitHub Actions workflow yaml files in a given directory
+res, err := r.ParseGitHubActionsInPath(ctx, dir)
+...
+// Parse a single yaml file referencing GitHub Actions
+res, err := r.ParseGitHubActionsInFile(ctx, fileHandler)
+```
+
+### Container images 
+
+```go
+// Create a new replacer
+r := replacer.New(cfg)
+...
+// Parse a single container image reference
+ret, err := r.ParseContainerImageString(ctx, imageRef)
+...
+// Parse all yaml files referencing container images in a given directory (k8s, docker-compose, Dockerfile, etc)
+res, err := r.ParseContainerImagesInPath(ctx, dir)
+...
+// Parse a single yaml file referencing container images
+res, err := r.ParseContainerImagesInFile(ctx, fileHandler)
+```
 
 ## Contributing
 

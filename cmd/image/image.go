@@ -17,12 +17,16 @@
 package image
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
+
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/config"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/replacer"
-	"path/filepath"
 )
 
 // CmdContainerImage represents the containers command
@@ -80,13 +84,17 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		}
 		// Process the output files
 		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
-	} else {
-		// Replace the passed reference
-		res, err := r.ParseContainerImageString(cmd.Context(), args[0])
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), fmt.Sprintf("%s@%s", res.Name, res.Ref))
-		return nil
 	}
+	// Replace the passed reference
+	res, err := r.ParseContainerImageString(cmd.Context(), args[0])
+	if err != nil {
+		if errors.Is(err, ferrors.ErrReferenceSkipped) {
+			fmt.Fprintln(cmd.OutOrStdout(), args[0]) // nolint:errcheck
+			return nil
+		}
+		return err
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s@%s\n", res.Name, res.Ref) // nolint:errcheck
+	return nil
+
 }

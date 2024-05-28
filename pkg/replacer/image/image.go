@@ -13,30 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package image provides utilities to work with container images.
 package image
 
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/stacklok/frizbee/internal/store"
 	"github.com/stacklok/frizbee/pkg/config"
 	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
-	"strings"
 )
 
 const (
 	// ContainerImageRegex is regular expression pattern to match container image usage in YAML
-	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+|[^\s"']+)(:[^\s"']+)?(@[^\s"']+)?["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)` // `image\s*:\s*["']?([^\s"']+/[^\s"']+(:[^\s"']+)?(@[^\s"']+)?)["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)` // `\b(image|FROM)\s*:?(\s*([^\s]+))?`
+	// nolint:lll
+	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+|[^\s"']+)(:[^\s"']+)?(@[^\s"']+)?["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)`
 	prefixFROM          = "FROM "
 	prefixImage         = "image: "
-	ReferenceType       = "container"
+	// ReferenceType is the type of the reference
+	ReferenceType = "container"
 )
 
+// Parser is a struct to replace container image references with digests
 type Parser struct {
 	regex string
 }
 
+// New creates a new Parser
 func New(regex string) *Parser {
 	if regex == "" {
 		regex = ContainerImageRegex
@@ -46,11 +52,14 @@ func New(regex string) *Parser {
 	}
 }
 
+// GetRegex returns the regular expression pattern to match container image usage
 func (p *Parser) GetRegex() string {
 	return p.regex
 }
 
-func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
+// Replace replaces the container image reference with the digest
+func (_ *Parser) Replace(ctx context.Context,
+	matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
 	// Trim the prefix
 	hasFROMPrefix := false
 	hasImagePrefix := false
@@ -85,7 +94,8 @@ func (p *Parser) Replace(ctx context.Context, matchedLine string, _ interfaces.R
 	return imageRefWithDigest, nil
 }
 
-func (p *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
+// ConvertToEntityRef converts a container image reference to an EntityRef
+func (_ *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
 	reference = strings.TrimPrefix(reference, prefixImage)
 	reference = strings.TrimPrefix(reference, prefixFROM)
 	var sep string

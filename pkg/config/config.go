@@ -19,12 +19,12 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 

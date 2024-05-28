@@ -19,12 +19,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/stacklok/frizbee/cmd/action"
-	"github.com/stacklok/frizbee/cmd/image"
 	"os"
 
 	"github.com/spf13/cobra"
 
+	"github.com/stacklok/frizbee/cmd/actions"
+	"github.com/stacklok/frizbee/cmd/image"
 	"github.com/stacklok/frizbee/cmd/version"
 	"github.com/stacklok/frizbee/pkg/config"
 )
@@ -39,7 +39,7 @@ func Execute() {
 
 	rootCmd.PersistentFlags().StringP("config", "c", ".frizbee.yml", "config file (default is .frizbee.yml)")
 
-	rootCmd.AddCommand(action.CmdGHActions())
+	rootCmd.AddCommand(actions.CmdGHActions())
 	rootCmd.AddCommand(image.CmdContainerImage())
 	rootCmd.AddCommand(version.CmdVersion())
 

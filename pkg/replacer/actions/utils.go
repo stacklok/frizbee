@@ -13,19 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package action
+package actions
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/go-github/v61/github"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/interfaces"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/google/go-github/v61/github"
+
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 )
 
 var (

@@ -17,14 +17,17 @@ package image
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"path/filepath"
+	"strconv"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
-	"path/filepath"
-	"strconv"
 )
 
 // CmdList represents the one sub-command
@@ -35,11 +38,12 @@ func CmdList() *cobra.Command {
 		Long: `This utility lists all container images used in the files in the directory
 
 Example: 
-	frizbee image list -d <path>
+	frizbee image list <path>
 `,
 		Aliases:      []string{"ls"},
 		RunE:         list,
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 	}
 
 	cli.DeclareFrizbeeFlags(cmd, true)
@@ -50,7 +54,7 @@ Example:
 func list(cmd *cobra.Command, args []string) error {
 	dir := filepath.Clean(args[0])
 	if !cli.IsPath(dir) {
-		return fmt.Errorf("the provided argument is not a path")
+		return errors.New("the provided argument is not a path")
 	}
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
@@ -82,7 +86,7 @@ func list(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		jsonString := string(jsonBytes)
-		fmt.Fprintln(cmd.OutOrStdout(), jsonString)
+		fmt.Fprintln(cmd.OutOrStdout(), jsonString) // nolint:errcheck
 		return nil
 	case "table":
 		table := tablewriter.NewWriter(cmd.OutOrStdout())

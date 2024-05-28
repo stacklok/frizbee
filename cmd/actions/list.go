@@ -13,19 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package action
+package actions
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/cobra"
-	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/replacer"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/cobra"
+
+	"github.com/stacklok/frizbee/internal/cli"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/replacer"
 )
 
 // CmdList represents the one sub-command
@@ -36,12 +39,12 @@ func CmdList() *cobra.Command {
 		Long: `This utility lists all the github actions used in the workflows
 
 Example: 
-	frizbee action list -d .github/workflows
+	frizbee action list .github/workflows
 `,
 		Aliases:      []string{"ls"},
 		RunE:         list,
 		SilenceUsage: true,
-		Args:         cobra.ExactArgs(1),
+		Args:         cobra.MaximumNArgs(1),
 	}
 
 	cli.DeclareFrizbeeFlags(cmd, true)
@@ -50,9 +53,15 @@ Example:
 }
 
 func list(cmd *cobra.Command, args []string) error {
-	dir := filepath.Clean(args[0])
+	// Set the default directory if not provided
+	dir := ".github/workflows"
+	if len(args) > 0 {
+		dir = args[0]
+	}
+
+	dir = filepath.Clean(dir)
 	if !cli.IsPath(dir) {
-		return fmt.Errorf("the provided argument is not a path")
+		return errors.New("the provided argument is not a path")
 	}
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
@@ -86,7 +95,7 @@ func list(cmd *cobra.Command, args []string) error {
 		}
 		jsonString := string(jsonBytes)
 
-		fmt.Fprintln(cmd.OutOrStdout(), jsonString)
+		fmt.Fprintln(cmd.OutOrStdout(), jsonString) // nolint:errcheck
 		return nil
 	case "table":
 		table := tablewriter.NewWriter(cmd.OutOrStdout())

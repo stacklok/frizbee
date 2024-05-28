@@ -18,6 +18,7 @@ package version
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/stacklok/frizbee/internal/cli"
 )
 

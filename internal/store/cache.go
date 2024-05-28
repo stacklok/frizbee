@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package store provides utilities to work with a cache store.
 package store
 
 import (

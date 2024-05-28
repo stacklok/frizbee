@@ -13,18 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package cli provides utilities to work with the command-line interface.
 package cli
 
 import (
 	"fmt"
-	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"text/template"
+
+	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -77,7 +79,7 @@ var (
 	VerboseCLIVersion = ""
 )
 
-// nolint:init
+// nolint:gochecknoinits
 func init() {
 	buildinfo, ok := debug.ReadBuildInfo()
 	if !ok {
@@ -115,6 +117,7 @@ func (vvs *versionInfo) String() string {
 	return stringBuilder.String()
 }
 
+// NewHelper creates a new CLI Helper struct.
 func NewHelper(cmd *cobra.Command) (*Helper, error) {
 	dryRun, err := cmd.Flags().GetBool("dry-run")
 	if err != nil {
@@ -158,7 +161,7 @@ func DeclareFrizbeeFlags(cmd *cobra.Command, enableOutput bool) {
 // not quiet.
 func (r *Helper) Logf(format string, args ...interface{}) {
 	if !r.Quiet {
-		fmt.Fprintf(r.Cmd.ErrOrStderr(), format, args...)
+		fmt.Fprintf(r.Cmd.ErrOrStderr(), format, args...) // nolint:errcheck
 	}
 }
 
@@ -188,7 +191,7 @@ func (r *Helper) ProcessOutput(path string, processed []string, modified map[str
 
 			defer func() {
 				if err := f.Close(); err != nil {
-					fmt.Fprintf(r.Cmd.ErrOrStderr(), "failed to close file %s: %v", path, err)
+					fmt.Fprintf(r.Cmd.ErrOrStderr(), "failed to close file %s: %v", path, err) // nolint:errcheck
 				}
 			}()
 
@@ -206,10 +209,8 @@ func (r *Helper) ProcessOutput(path string, processed []string, modified map[str
 	return nil
 }
 
+// IsPath returns true if the given path is a file or directory.
 func IsPath(pathOrRef string) bool {
 	_, err := os.Stat(pathOrRef)
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }

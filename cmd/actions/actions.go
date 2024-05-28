@@ -13,40 +13,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package action provides command-line utilities to work with GitHub Actions.
-package action
+// Package actions provides command-line utilities to work with GitHub Actions.
+package actions
 
 import (
+	"errors"
 	"fmt"
-	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/replacer"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+
+	"github.com/stacklok/frizbee/internal/cli"
+	"github.com/stacklok/frizbee/pkg/config"
+	ferrors "github.com/stacklok/frizbee/pkg/errors"
+	"github.com/stacklok/frizbee/pkg/replacer"
 )
 
 // CmdGHActions represents the actions command
 func CmdGHActions() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "action",
+		Use:   "actions",
 		Short: "Replace tags in GitHub Actions workflows",
 		Long: `This utility replaces tag or branch references in GitHub Actions workflows
 with the latest commit hash of the referenced tag or branch.
 	
 Example:
 
-	$ frizbee action <.github/workflows> or <actions/checkout@v4>
+	$ frizbee actions <.github/workflows> or <actions/checkout@v4>
 
 This will replace all tag or branch references in all GitHub Actions workflows
 for the given directory. Supports both directories and single references.
 
 ` + cli.TokenHelpText + "\n",
-		Aliases:      []string{"ghactions", "actions"}, // backwards compatibility
+		Aliases:      []string{"ghactions"}, // backwards compatibility
 		RunE:         replaceCmd,
 		SilenceUsage: true,
-		Args:         cobra.ExactArgs(1),
+		Args:         cobra.MaximumNArgs(1),
 	}
 
 	// flags
@@ -58,7 +61,14 @@ for the given directory. Supports both directories and single references.
 	return cmd
 }
 
+// nolint:errcheck
 func replaceCmd(cmd *cobra.Command, args []string) error {
+	// Set the default directory if not provided
+	pathOrRef := ".github/workflows"
+	if len(args) > 0 {
+		pathOrRef = args[0]
+	}
+
 	// Extract the CLI flags from the cobra command
 	cliFlags, err := cli.NewHelper(cmd)
 	if err != nil {
@@ -76,8 +86,8 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		WithUserRegex(cliFlags.Regex).
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
-	if cli.IsPath(args[0]) {
-		dir := filepath.Clean(args[0])
+	if cli.IsPath(pathOrRef) {
+		dir := filepath.Clean(pathOrRef)
 		// Replace the tags in the given directory
 		res, err := r.ParseGitHubActionsInPath(cmd.Context(), dir)
 		if err != nil {
@@ -85,13 +95,16 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		}
 		// Process the output files
 		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
-	} else {
-		// Replace the passed reference
-		res, err := r.ParseGitHubActionString(cmd.Context(), args[0])
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), fmt.Sprintf("%s@%s", res.Name, res.Ref))
-		return nil
 	}
+	// Replace the passed reference
+	res, err := r.ParseGitHubActionString(cmd.Context(), pathOrRef)
+	if err != nil {
+		if errors.Is(err, ferrors.ErrReferenceSkipped) {
+			fmt.Fprintln(cmd.OutOrStdout(), pathOrRef) // nolint:errcheck
+			return nil
+		}
+		return err
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s@%s\n", res.Name, res.Ref) // nolint:errcheck
+	return nil
 }

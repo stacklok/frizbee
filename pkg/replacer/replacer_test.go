@@ -17,17 +17,19 @@ package replacer
 
 import (
 	"context"
-	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/interfaces"
-	"github.com/stacklok/frizbee/pkg/replacer/action"
-	"github.com/stacklok/frizbee/pkg/replacer/image"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/stacklok/frizbee/internal/cli"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/interfaces"
+	"github.com/stacklok/frizbee/pkg/replacer/actions"
+	"github.com/stacklok/frizbee/pkg/replacer/image"
 )
 
 func TestReplacer_ParseContainerImageString(t *testing.T) {
@@ -173,7 +175,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "actions/checkout",
 				Ref:    "b4ffde65f46336ab88eb53be808477a3936bae11",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "v4.1.1",
 				Prefix: "",
 			},
@@ -187,7 +189,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "actions/checkout",
 				Ref:    "f43a0e5ff2bd294095638e18286ca9a3d1956744",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "v3.6.0",
 				Prefix: "uses: ",
 			},
@@ -198,14 +200,8 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			args: args{
 				action: "actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
 			},
-			want: &interfaces.EntityRef{
-				Name:   "actions/checkout",
-				Ref:    "1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
-				Type:   action.ReferenceType,
-				Tag:    "1d96c772d19495a3b5c517cd2bc0cb401ea0529f",
-				Prefix: "",
-			},
-			wantErr: false,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "aquasecurity/trivy-action with 0.14.0",
@@ -215,7 +211,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "aquasecurity/trivy-action",
 				Ref:    "2b6a709cf9c4025c5438138008beaddbb02086f0",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "0.14.0",
 				Prefix: "",
 			},
@@ -229,7 +225,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "aquasecurity/trivy-action",
 				Ref:    "fb5e1b36be448e92ca98648c661bd7e9da1f1317",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "bump-trivy",
 				Prefix: "",
 			},
@@ -275,7 +271,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "bufbuild/buf-setup-action",
 				Ref:    "f0475db2e1b1b2e8d121066b59dfb7f7bd6c4dc4",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "v1",
 				Prefix: "",
 			},
@@ -288,7 +284,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			want: &interfaces.EntityRef{
 				Name:   "anchore/sbom-action/download-syft",
 				Ref:    "78fc58e266e87a38d4194b2137a3d4e9bcaf7ca1",
-				Type:   action.ReferenceType,
+				Type:   actions.ReferenceType,
 				Tag:    "v0.14.3",
 				Prefix: "",
 			},

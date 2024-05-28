@@ -13,17 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package action
+// Package actions provides utilities to work with GitHub Actions.
+package actions
 
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/stacklok/frizbee/internal/store"
 	"github.com/stacklok/frizbee/pkg/config"
 	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
-	"strings"
 )
 
 const (
@@ -31,13 +33,16 @@ const (
 	GitHubActionsRegex = `uses:\s*[^\s]+/[^\s]+@[^\s]+|uses:\s*docker://[^\s]+:[^\s]+`
 	prefixUses         = "uses: "
 	prefixDocker       = "docker://"
-	ReferenceType      = "action"
+	// ReferenceType is the type of the reference
+	ReferenceType = "action"
 )
 
+// Parser is a struct to replace action references with digests
 type Parser struct {
 	regex string
 }
 
+// New creates a new Parser
 func New(regex string) *Parser {
 	if regex == "" {
 		regex = GitHubActionsRegex
@@ -47,11 +52,19 @@ func New(regex string) *Parser {
 	}
 }
 
+// GetRegex returns the regular expression pattern to match GitHub Actions usage
 func (p *Parser) GetRegex() string {
 	return p.regex
 }
 
-func (p *Parser) Replace(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
+// Replace replaces the action reference with the digest
+func (p *Parser) Replace(
+	ctx context.Context,
+	matchedLine string,
+	restIf interfaces.REST,
+	cfg config.Config,
+	cache store.RefCacher,
+) (*interfaces.EntityRef, error) {
 	var err error
 	var actionRef *interfaces.EntityRef
 	hasUsesPrefix := false
@@ -80,7 +93,13 @@ func (p *Parser) Replace(ctx context.Context, matchedLine string, restIf interfa
 	return actionRef, nil
 }
 
-func (p *Parser) replaceAction(ctx context.Context, matchedLine string, restIf interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
+func (_ *Parser) replaceAction(
+	ctx context.Context,
+	matchedLine string,
+	restIf interfaces.REST,
+	cfg config.Config,
+	cache store.RefCacher,
+) (*interfaces.EntityRef, error) {
 
 	// If the value is a local path or should be excluded, skip it
 	if isLocal(matchedLine) || shouldExclude(&cfg.GHActions, matchedLine) {
@@ -121,6 +140,11 @@ func (p *Parser) replaceAction(ctx context.Context, matchedLine string, restIf i
 		}
 	}
 
+	// Compare the digest with the reference and return the original reference if they already match
+	if ref == sum {
+		return nil, fmt.Errorf("image already referenced by digest: %s %w", matchedLine, ferrors.ErrReferenceSkipped)
+	}
+
 	return &interfaces.EntityRef{
 		Name: act,
 		Ref:  sum,
@@ -129,7 +153,13 @@ func (p *Parser) replaceAction(ctx context.Context, matchedLine string, restIf i
 	}, nil
 }
 
-func (p *Parser) replaceDocker(ctx context.Context, matchedLine string, _ interfaces.REST, cfg config.Config, cache store.RefCacher) (*interfaces.EntityRef, error) {
+func (_ *Parser) replaceDocker(
+	ctx context.Context,
+	matchedLine string,
+	_ interfaces.REST,
+	cfg config.Config,
+	cache store.RefCacher,
+) (*interfaces.EntityRef, error) {
 	// Trim the docker prefix
 	trimmedRef := strings.TrimPrefix(matchedLine, prefixDocker)
 
@@ -157,7 +187,8 @@ func (p *Parser) replaceDocker(ctx context.Context, matchedLine string, _ interf
 	return actionRef, nil
 }
 
-func (p *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
+// ConvertToEntityRef converts an action reference to an EntityRef
+func (_ *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
 	reference = strings.TrimPrefix(reference, prefixUses)
 	refType := ReferenceType
 	separator := "@"

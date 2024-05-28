@@ -17,16 +17,19 @@ package image
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/internal/store"
 	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
-	"strings"
 )
 
 // GetImageDigestFromRef returns the digest of a container image reference
@@ -47,7 +50,7 @@ func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache
 	if platform != "" {
 		platformSplit := strings.Split(platform, "/")
 		if len(platformSplit) != 2 {
-			return nil, fmt.Errorf("platform must be in the format os/arch")
+			return nil, errors.New("platform must be in the format os/arch")
 		}
 		opts = append(opts, remote.WithPlatform(v1.Platform{
 			OS:           platformSplit[0],
@@ -61,13 +64,14 @@ func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache
 	if cache != nil {
 		if d, ok := cache.Load(imageRef); ok {
 			digest = d
+		} else {
+			desc, err := remote.Get(ref, opts...)
+			if err != nil {
+				return nil, err
+			}
+			digest = desc.Digest.String()
+			cache.Store(imageRef, digest)
 		}
-		desc, err := remote.Get(ref, opts...)
-		if err != nil {
-			return nil, err
-		}
-		digest = desc.Digest.String()
-		cache.Store(imageRef, digest)
 	} else {
 		desc, err := remote.Get(ref, opts...)
 		if err != nil {

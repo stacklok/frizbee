@@ -13,13 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package interfaces provides interfaces for the frizbee package.
 package interfaces
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/stacklok/frizbee/internal/store"
 	"github.com/stacklok/frizbee/pkg/config"
-	"net/http"
 )
 
 // EntityRef represents an action reference.
@@ -31,6 +33,7 @@ type EntityRef struct {
 	Prefix string `json:"prefix"`
 }
 
+// Parser is an interface to replace references with digests
 type Parser interface {
 	GetRegex() string
 	Replace(ctx context.Context, matchedLine string, restIf REST, cfg config.Config, cache store.RefCacher) (*EntityRef, error)

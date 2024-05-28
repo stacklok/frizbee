@@ -20,25 +20,26 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/go-git/go-billy/v5/osfs"
-	"github.com/stacklok/frizbee/internal/ghrest"
-	"github.com/stacklok/frizbee/internal/store"
-	"github.com/stacklok/frizbee/internal/traverse"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/interfaces"
-	"github.com/stacklok/frizbee/pkg/replacer/action"
-	"github.com/stacklok/frizbee/pkg/replacer/image"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
-)
 
-type ParserType string
+	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/osfs"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/stacklok/frizbee/internal/store"
+	"github.com/stacklok/frizbee/internal/traverse"
+	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/ghrest"
+	"github.com/stacklok/frizbee/pkg/interfaces"
+	"github.com/stacklok/frizbee/pkg/replacer/actions"
+	"github.com/stacklok/frizbee/pkg/replacer/image"
+)
 
 // Replacer replaces container image references in YAML files
 type Replacer struct {
@@ -48,11 +49,13 @@ type Replacer struct {
 	config.Config
 }
 
+// ReplaceResult holds a slice of all processed files along with a map of their modified content
 type ReplaceResult struct {
 	Processed []string
 	Modified  map[string]string
 }
 
+// ListResult holds the result of the list methods
 type ListResult struct {
 	Processed []string
 	Entities  []interfaces.EntityRef
@@ -81,31 +84,37 @@ func New(cfg *config.Config) *Replacer {
 
 // ParseGitHubActionString parses and returns the referenced entity pinned by its digest
 func (r *Replacer) ParseGitHubActionString(ctx context.Context, entityRef string) (*interfaces.EntityRef, error) {
-	r.parser = action.New(r.regex)
+	r.parser = actions.New(r.regex)
 	return r.parser.Replace(ctx, entityRef, r.REST, r.Config, nil)
 }
 
 // ParseGitHubActionsInPath parses and replaces all GitHub actions references in the provided directory
 func (r *Replacer) ParseGitHubActionsInPath(ctx context.Context, dir string) (*ReplaceResult, error) {
-	r.parser = action.New(r.regex)
-	return r.parsePath(ctx, dir)
+	r.parser = actions.New(r.regex)
+	return r.parsePathInFS(ctx, osfs.New(filepath.Dir(dir), osfs.WithBoundOS()), filepath.Base(dir))
+}
+
+// ParseGitHubActionsInFS parses and replaces all container image references in the provided file system
+func (r *Replacer) ParseGitHubActionsInFS(ctx context.Context, bfs billy.Filesystem, base string) (*ReplaceResult, error) {
+	r.parser = actions.New(r.regex)
+	return r.parsePathInFS(ctx, bfs, base)
 }
 
 // ParseGitHubActionsInFile parses and replaces all GitHub actions references in the provided file
 func (r *Replacer) ParseGitHubActionsInFile(ctx context.Context, f io.Reader, cache store.RefCacher) (bool, string, error) {
-	r.parser = action.New(r.regex)
+	r.parser = actions.New(r.regex)
 	return r.parseAndReplaceReferencesInFile(ctx, f, cache)
 }
 
 // ListGitHibActionsInPath lists all GitHub actions references in the provided directory
 func (r *Replacer) ListGitHibActionsInPath(dir string) (*ListResult, error) {
-	r.parser = action.New(r.regex)
+	r.parser = actions.New(r.regex)
 	return r.listReferences(dir)
 }
 
 // ListGitHibActionsInFile lists all GitHub actions references in the provided file
 func (r *Replacer) ListGitHibActionsInFile(f io.Reader) (*ListResult, error) {
-	r.parser = action.New(r.regex)
+	r.parser = actions.New(r.regex)
 	found, err := r.listReferencesInFile(f)
 	if err != nil {
 		return nil, err
@@ -131,7 +140,13 @@ func (r *Replacer) ParseContainerImageString(ctx context.Context, entityRef stri
 // ParseContainerImagesInPath parses and replaces all container image references in the provided directory
 func (r *Replacer) ParseContainerImagesInPath(ctx context.Context, dir string) (*ReplaceResult, error) {
 	r.parser = image.New(r.regex)
-	return r.parsePath(ctx, dir)
+	return r.parsePathInFS(ctx, osfs.New(filepath.Dir(dir), osfs.WithBoundOS()), filepath.Base(dir))
+}
+
+// ParseContainerImagesInFS parses and replaces all container image references in the provided file system
+func (r *Replacer) ParseContainerImagesInFS(ctx context.Context, bfs billy.Filesystem, base string) (*ReplaceResult, error) {
+	r.parser = image.New(r.regex)
+	return r.parsePathInFS(ctx, bfs, base)
 }
 
 // ParseContainerImagesInFile parses and replaces all container image references in the provided file
@@ -165,13 +180,9 @@ func (r *Replacer) ListContainerImagesInFile(f io.Reader) (*ListResult, error) {
 	return res, nil
 }
 
-func (r *Replacer) parsePath(ctx context.Context, dir string) (*ReplaceResult, error) {
+func (r *Replacer) parsePathInFS(ctx context.Context, bfs billy.Filesystem, base string) (*ReplaceResult, error) {
 	var eg errgroup.Group
 	var mu sync.Mutex
-
-	basedir := filepath.Dir(dir)
-	base := filepath.Base(dir)
-	bfs := osfs.New(basedir, osfs.WithBoundOS())
 
 	cache := store.NewRefCacher()
 
@@ -181,7 +192,7 @@ func (r *Replacer) parsePath(ctx context.Context, dir string) (*ReplaceResult, e
 	}
 
 	// Traverse all YAML/YML files in dir
-	err := traverse.TraverseYAMLDockerfiles(bfs, base, func(path string) error {
+	err := traverse.YamlDockerfiles(bfs, base, func(path string) error {
 		eg.Go(func() error {
 			file, err := bfs.Open(path)
 			if err != nil {
@@ -238,7 +249,7 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 	found := mapset.NewSet[interfaces.EntityRef]()
 
 	// Traverse all related files
-	err := traverse.TraverseYAMLDockerfiles(bfs, base, func(path string) error {
+	err := traverse.YamlDockerfiles(bfs, base, func(path string) error {
 		eg.Go(func() error {
 			file, err := bfs.Open(path)
 			if err != nil {
@@ -282,10 +293,10 @@ func (r *Replacer) listReferences(dir string) (*ListResult, error) {
 	return &res, nil
 }
 
-// parseAndReplaceReferencesInFile takes the given file reader and returns its content
-// after replacing all references to tags with the respective digests.
-// It also uses the provided cache to store the checksums.
-func (r *Replacer) parseAndReplaceReferencesInFile(ctx context.Context, f io.Reader, cache store.RefCacher) (bool, string, error) {
+func (r *Replacer) parseAndReplaceReferencesInFile(
+	ctx context.Context,
+	f io.Reader, cache store.RefCacher,
+) (bool, string, error) {
 	var contentBuilder strings.Builder
 	var ret *interfaces.EntityRef
 
@@ -309,7 +320,7 @@ func (r *Replacer) parseAndReplaceReferencesInFile(ctx context.Context, f io.Rea
 				// Return the original line as we don't want to update it in case something errored out
 				return matchedLine
 			}
-			// Construct the new line
+			// Construct the new line, comments in dockerfiles are handled differently than yml files
 			if strings.Contains(matchedLine, "FROM") {
 				return fmt.Sprintf("%s%s:%s@%s", ret.Prefix, ret.Name, ret.Tag, ret.Ref)
 			}
@@ -352,6 +363,7 @@ func (r *Replacer) listReferencesInFile(f io.Reader) (mapset.Set[interfaces.Enti
 
 		// See if we can match an entity reference in the line
 		foundEntries := re.FindAllString(line, -1)
+		// nolint:gosimple
 		if foundEntries != nil {
 			for _, entry := range foundEntries {
 				e, err := r.parser.ConvertToEntityRef(entry)

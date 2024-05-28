@@ -13,27 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package traverse provides utilities to traverse directories.
 package traverse
 
 import (
 	"fmt"
-	"github.com/go-git/go-billy/v5"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-git/go-billy/v5"
 )
 
-// TraverseGHWFunc is a function that gets called with each file in a GitHub Actions workflow
+// GhwFunc is a function that gets called with each file in a GitHub Actions workflow
 // directory. It receives the path to the file.
-type TraverseGHWFunc func(path string) error
+type GhwFunc func(path string) error
 
-// TraverseFunc is a function that gets called with each file in a directory.
-type TraverseFunc func(path string, info fs.FileInfo) error
+// FuncTraverse is a function that gets called with each file in a directory.
+type FuncTraverse func(path string, info fs.FileInfo) error
 
-// TraverseYAMLDockerfiles traverses all yaml/yml in the given directory
+// YamlDockerfiles traverses all yaml/yml in the given directory
 // and calls the given function with each workflow.
-func TraverseYAMLDockerfiles(bfs billy.Filesystem, base string, fun TraverseGHWFunc) error {
+func YamlDockerfiles(bfs billy.Filesystem, base string, fun GhwFunc) error {
 	return Traverse(bfs, base, func(path string, info fs.FileInfo) error {
 		if !isYAMLOrDockerfile(info) {
 			return nil
@@ -48,7 +50,7 @@ func TraverseYAMLDockerfiles(bfs billy.Filesystem, base string, fun TraverseGHWF
 }
 
 // Traverse traverses the given directory and calls the given function with each file.
-func Traverse(bfs billy.Filesystem, base string, fun TraverseFunc) error {
+func Traverse(bfs billy.Filesystem, base string, fun FuncTraverse) error {
 	return Walk(bfs, base, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return nil
@@ -76,12 +78,12 @@ func isYAMLOrDockerfile(info fs.FileInfo) bool {
 
 // walk recursively descends path, calling walkFn
 // adapted from https://golang.org/src/path/filepath/path.go
-func walk(fs billy.Filesystem, path string, info os.FileInfo, walkFn filepath.WalkFunc) error {
+func walk(bfs billy.Filesystem, path string, info os.FileInfo, walkFn filepath.WalkFunc) error {
 	if !info.IsDir() {
 		return walkFn(path, info, nil)
 	}
 
-	names, err := readDirNames(fs, path)
+	names, err := readDirNames(bfs, path)
 	err1 := walkFn(path, info, err)
 	// If err != nil, walk can't walk into this directory.
 	// err1 != nil means walkFn want walk to skip this directory or stop walking.
@@ -96,13 +98,13 @@ func walk(fs billy.Filesystem, path string, info os.FileInfo, walkFn filepath.Wa
 
 	for _, name := range names {
 		filename := filepath.Join(path, name)
-		fileInfo, err := fs.Lstat(filename)
+		fileInfo, err := bfs.Lstat(filename)
 		if err != nil {
 			if err := walkFn(filename, fileInfo, err); err != nil && err != filepath.SkipDir {
 				return err
 			}
 		} else {
-			err = walk(fs, filename, fileInfo, walkFn)
+			err = walk(bfs, filename, fileInfo, walkFn)
 			if err != nil {
 				if !fileInfo.IsDir() || err != filepath.SkipDir {
 					return err
@@ -123,12 +125,12 @@ func walk(fs billy.Filesystem, path string, info os.FileInfo, walkFn filepath.Wa
 // to walk that directory. Walk does not follow symbolic links.
 //
 // Function adapted from https://github.com/golang/go/blob/3b770f2ccb1fa6fecc22ea822a19447b10b70c5c/src/path/filepath/path.go#L500
-func Walk(fs billy.Filesystem, root string, walkFn filepath.WalkFunc) error {
-	info, err := fs.Lstat(root)
+func Walk(bfs billy.Filesystem, root string, walkFn filepath.WalkFunc) error {
+	info, err := bfs.Lstat(root)
 	if err != nil {
 		err = walkFn(root, nil, err)
 	} else {
-		err = walk(fs, root, info, walkFn)
+		err = walk(bfs, root, info, walkFn)
 	}
 
 	if err == filepath.SkipDir {
@@ -138,8 +140,8 @@ func Walk(fs billy.Filesystem, root string, walkFn filepath.WalkFunc) error {
 	return err
 }
 
-func readDirNames(fs billy.Filesystem, dir string) ([]string, error) {
-	files, err := fs.ReadDir(dir)
+func readDirNames(bfs billy.Filesystem, dir string) ([]string, error) {
+	files, err := bfs.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
