@@ -21,11 +21,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stacklok/frizbee/internal/store"
-	"github.com/stacklok/frizbee/pkg/config"
-	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
+	"github.com/stacklok/frizbee/pkg/utils/config"
+	"github.com/stacklok/frizbee/pkg/utils/store"
 )
 
 const (
@@ -110,7 +109,7 @@ func (p *Parser) replaceAction(
 
 	// If the value is a local path or should be excluded, skip it
 	if isLocal(matchedLine) || shouldExclude(&cfg.GHActions, matchedLine) {
-		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
+		return nil, fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, matchedLine)
 	}
 
 	// Parse the action reference
@@ -121,7 +120,7 @@ func (p *Parser) replaceAction(
 
 	// Check if the parsed reference should be excluded
 	if shouldExclude(&cfg.GHActions, act) {
-		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
+		return nil, fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, matchedLine)
 	}
 	var sum string
 
@@ -149,7 +148,7 @@ func (p *Parser) replaceAction(
 
 	// Compare the digest with the reference and return the original reference if they already match
 	if ref == sum {
-		return nil, fmt.Errorf("image already referenced by digest: %s %w", matchedLine, ferrors.ErrReferenceSkipped)
+		return nil, fmt.Errorf("image already referenced by digest: %s %w", matchedLine, interfaces.ErrReferenceSkipped)
 	}
 
 	return &interfaces.EntityRef{
@@ -171,7 +170,7 @@ func (p *Parser) replaceDocker(
 
 	// If the value is a local path or should be excluded, skip it
 	if isLocal(trimmedRef) || shouldExclude(&cfg.GHActions, trimmedRef) {
-		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
+		return nil, fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, matchedLine)
 	}
 
 	// Get the digest of the docker:// image reference
@@ -182,7 +181,7 @@ func (p *Parser) replaceDocker(
 
 	// Check if the parsed reference should be excluded
 	if shouldExclude(&cfg.GHActions, actionRef.Name) {
-		return nil, fmt.Errorf("%w: %s", ferrors.ErrReferenceSkipped, matchedLine)
+		return nil, fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, matchedLine)
 	}
 
 	// Add back the docker prefix

@@ -26,8 +26,8 @@ import (
 
 	"github.com/google/go-github/v61/github"
 
-	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/interfaces"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 var (

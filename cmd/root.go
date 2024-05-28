@@ -26,7 +26,7 @@ import (
 	"github.com/stacklok/frizbee/cmd/actions"
 	"github.com/stacklok/frizbee/cmd/image"
 	"github.com/stacklok/frizbee/cmd/version"
-	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 // Execute runs the root command.

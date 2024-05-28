@@ -21,10 +21,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/stacklok/frizbee/internal/store"
-	"github.com/stacklok/frizbee/pkg/config"
-	ferrors "github.com/stacklok/frizbee/pkg/errors"
 	"github.com/stacklok/frizbee/pkg/interfaces"
+	"github.com/stacklok/frizbee/pkg/utils/config"
+	"github.com/stacklok/frizbee/pkg/utils/store"
 )
 
 const (
@@ -81,7 +80,7 @@ func (p *Parser) Replace(
 		matchedLine = strings.TrimPrefix(matchedLine, prefixFROM)
 		// Check if the image reference should be excluded, i.e. scratch
 		if shouldExclude(matchedLine) {
-			return nil, fmt.Errorf("image reference %s should be excluded - %w", matchedLine, ferrors.ErrReferenceSkipped)
+			return nil, fmt.Errorf("image reference %s should be excluded - %w", matchedLine, interfaces.ErrReferenceSkipped)
 		}
 		hasFROMPrefix = true
 	} else if strings.HasPrefix(matchedLine, prefixImage) {

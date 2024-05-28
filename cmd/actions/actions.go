@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
-	ferrors "github.com/stacklok/frizbee/pkg/errors"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 // CmdGHActions represents the actions command
@@ -82,7 +82,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a new replacer
-	r := replacer.NewActionsReplacer(cfg).
+	r := replacer.NewGitHubActionsReplacer(cfg).
 		WithUserRegex(cliFlags.Regex).
 		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 
@@ -99,7 +99,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	// Replace the passed reference
 	res, err := r.ParseString(cmd.Context(), pathOrRef)
 	if err != nil {
-		if errors.Is(err, ferrors.ErrReferenceSkipped) {
+		if errors.Is(err, interfaces.ErrReferenceSkipped) {
 			fmt.Fprintln(cmd.OutOrStdout(), pathOrRef) // nolint:errcheck
 			return nil
 		}

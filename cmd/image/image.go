@@ -24,9 +24,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
-	ferrors "github.com/stacklok/frizbee/pkg/errors"
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 // CmdContainerImage represents the containers command
@@ -72,7 +72,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a new replacer
-	r := replacer.NewImageReplacer(cfg).
+	r := replacer.NewContainerImagesReplacer(cfg).
 		WithUserRegex(cliFlags.Regex)
 
 	if cli.IsPath(args[0]) {
@@ -88,7 +88,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	// Replace the passed reference
 	res, err := r.ParseString(cmd.Context(), args[0])
 	if err != nil {
-		if errors.Is(err, ferrors.ErrReferenceSkipped) {
+		if errors.Is(err, interfaces.ErrReferenceSkipped) {
 			fmt.Fprintln(cmd.OutOrStdout(), args[0]) // nolint:errcheck
 			return nil
 		}

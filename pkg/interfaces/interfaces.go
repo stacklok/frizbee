@@ -18,10 +18,16 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"github.com/stacklok/frizbee/internal/store"
-	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/utils/config"
+	"github.com/stacklok/frizbee/pkg/utils/store"
+)
+
+var (
+	// ErrReferenceSkipped is returned when the reference is skipped.
+	ErrReferenceSkipped = errors.New("reference skipped")
 )
 
 // EntityRef represents an action reference.

@@ -26,10 +26,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/actions"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 func TestReplacer_ParseContainerImageString(t *testing.T) {
@@ -127,7 +127,7 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := NewImageReplacer(&config.Config{})
+			r := NewContainerImagesReplacer(&config.Config{})
 			got, err := r.ParseString(ctx, tt.args.refstr)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -270,7 +270,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			},
 			want: &interfaces.EntityRef{
 				Name:   "bufbuild/buf-setup-action",
-				Ref:    "f0475db2e1b1b2e8d121066b59dfb7f7bd6c4dc4",
+				Ref:    "dde0b9351db90fbf78e345f41a57de8514bf1091",
 				Type:   actions.ReferenceType,
 				Tag:    "v1",
 				Prefix: "",
@@ -296,7 +296,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			r := NewActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
+			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
 			got, err := r.ParseString(context.Background(), tt.args.action)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
@@ -355,7 +355,7 @@ services:
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := NewImageReplacer(&config.Config{})
+			r := NewContainerImagesReplacer(&config.Config{})
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
@@ -383,11 +383,13 @@ func TestReplacer_ParseGitHubActionsInFile(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name     string
-		before   string
-		expected string
-		modified bool
-		wantErr  bool
+		name           string
+		before         string
+		expected       string
+		regex          string
+		modified       bool
+		wantErr        bool
+		useCustomRegex bool
 	}{
 		{
 			name: "Replace image reference",
@@ -422,6 +424,44 @@ jobs:
           args: src/*.md
 `,
 			modified: true,
+			wantErr:  false,
+		},
+		{
+			name: "Fail with custom regex",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@v2
+      - uses: xt0rted/markdownlint-problem-matcher@v1
+      - name: "Run Markdown linter"
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: src/*.md
+`,
+			expected: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@v2
+      - uses: xt0rted/markdownlint-problem-matcher@v1
+      - name: "Run Markdown linter"
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: src/*.md
+`,
+			modified:       false,
+			wantErr:        false,
+			regex:          "invalid-regexp",
+			useCustomRegex: true,
 		},
 		// Add more test cases as needed
 	}
@@ -435,20 +475,23 @@ jobs:
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			r := NewActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+			if tt.useCustomRegex {
+				r = r.WithUserRegex(tt.regex)
+			}
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
 				assert.True(t, modified)
-				assert.NotEmpty(t, newContent)
+				assert.Equal(t, tt.expected, newContent)
 			} else {
 				assert.False(t, modified)
-				assert.Empty(t, newContent)
+				assert.Equal(t, tt.before, newContent)
 			}
 
 			if tt.wantErr {
 				assert.False(t, modified)
-				assert.Empty(t, newContent)
+				assert.Equal(t, tt.before, newContent)
 				assert.Error(t, err)
 				return
 			}

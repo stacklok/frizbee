@@ -26,8 +26,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stacklok/frizbee/internal/cli"
-	"github.com/stacklok/frizbee/pkg/config"
 	"github.com/stacklok/frizbee/pkg/replacer"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 // CmdList represents the one sub-command
@@ -69,7 +69,7 @@ func list(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create a new replacer
-	r := replacer.NewImageReplacer(cfg).
+	r := replacer.NewContainerImagesReplacer(cfg).
 		WithUserRegex(cliFlags.Regex)
 
 	// List the references in the directory

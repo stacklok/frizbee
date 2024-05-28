@@ -33,11 +33,11 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/stacklok/frizbee/internal/traverse"
-	"github.com/stacklok/frizbee/pkg/config"
-	"github.com/stacklok/frizbee/pkg/ghrest"
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/actions"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
+	"github.com/stacklok/frizbee/pkg/utils/config"
+	"github.com/stacklok/frizbee/pkg/utils/ghrest"
 )
 
 // ReplaceResult holds a slice of all processed files along with a map of their modified content
@@ -52,23 +52,23 @@ type ListResult struct {
 	Entities  []interfaces.EntityRef
 }
 
-// Replacer replaces container image references in YAML files
+// Replacer is an object with methods to replace references with digests
 type Replacer struct {
 	parser interfaces.Parser
 	rest   interfaces.REST
 	cfg    config.Config
 }
 
-// NewActionsReplacer creates a new replacer for GitHub actions
-func NewActionsReplacer(cfg *config.Config) *Replacer {
+// NewGitHubActionsReplacer creates a new replacer for GitHub actions
+func NewGitHubActionsReplacer(cfg *config.Config) *Replacer {
 	return &Replacer{
 		cfg:    *cfg,
 		parser: actions.New(),
 	}
 }
 
-// NewImageReplacer creates a new replacer for container images
-func NewImageReplacer(cfg *config.Config) *Replacer {
+// NewContainerImagesReplacer creates a new replacer for container images
+func NewContainerImagesReplacer(cfg *config.Config) *Replacer {
 	return &Replacer{
 		cfg:    *cfg,
 		parser: image.New(),
@@ -118,10 +118,15 @@ func (r *Replacer) ParseFile(ctx context.Context, f io.Reader) (bool, string, er
 
 // ListPath lists all entity references in the provided directory
 func (r *Replacer) ListPath(dir string) (*ListResult, error) {
-	return listReferences(dir, r.parser)
+	return listReferencesInFS(r.parser, osfs.New(filepath.Dir(dir), osfs.WithBoundOS()), filepath.Base(dir))
 }
 
-// ListInFile lists all entity in the provided file
+// ListPathInFS lists all entity references in the provided file system
+func (r *Replacer) ListPathInFS(bfs billy.Filesystem, base string) (*ListResult, error) {
+	return listReferencesInFS(r.parser, bfs, base)
+}
+
+// ListInFile lists all entities in the provided file
 func (r *Replacer) ListInFile(f io.Reader) (*ListResult, error) {
 	found, err := listReferencesInFile(f, r.parser)
 	if err != nil {
@@ -197,13 +202,9 @@ func parsePathInFS(
 	return &res, nil
 }
 
-func listReferences(dir string, parser interfaces.Parser) (*ListResult, error) {
+func listReferencesInFS(parser interfaces.Parser, bfs billy.Filesystem, base string) (*ListResult, error) {
 	var eg errgroup.Group
 	var mu sync.Mutex
-
-	basedir := filepath.Dir(dir)
-	base := filepath.Base(dir)
-	bfs := osfs.New(basedir, osfs.WithBoundOS())
 
 	res := ListResult{
 		Processed: make([]string, 0),
@@ -219,13 +220,12 @@ func listReferences(dir string, parser interfaces.Parser) (*ListResult, error) {
 			if err != nil {
 				return fmt.Errorf("failed to open file %s: %w", path, err)
 			}
-			// nolint:errcheck // ignore error
-			defer file.Close()
+			defer file.Close() // nolint:errcheck
 
 			// Parse the content of the file and list the matching references
 			foundRefs, err := listReferencesInFile(file, parser)
 			if err != nil {
-				return fmt.Errorf("failed to listReferences references in %s: %w", path, err)
+				return fmt.Errorf("failed to list references in %s: %w", path, err)
 			}
 
 			// Store the file name to the processed batch
@@ -312,8 +312,7 @@ func parseAndReplaceReferencesInFile(
 	return modified, contentBuilder.String(), nil
 }
 
-// listReferencesInFile takes the given file reader and returns a map of all
-// references, action or images, it found.
+// listReferencesInFile takes the given file reader and returns a map of all references, action or images it finds
 func listReferencesInFile(
 	f io.Reader,
 	parser interfaces.Parser,

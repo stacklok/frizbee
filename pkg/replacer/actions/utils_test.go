@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/stacklok/frizbee/pkg/ghrest"
+	"github.com/stacklok/frizbee/pkg/utils/ghrest"
 )
 
 func TestGetChecksum(t *testing.T) {
@@ -112,7 +112,7 @@ func TestGetChecksum(t *testing.T) {
 				action: "bufbuild/buf-setup-action",
 				ref:    "v1",
 			},
-			want: "f0475db2e1b1b2e8d121066b59dfb7f7bd6c4dc4",
+			want: "dde0b9351db90fbf78e345f41a57de8514bf1091",
 		},
 		{
 			name: "anchore/sbom-action/download-syft with a sub-action works",
