@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -89,12 +90,13 @@ func ParseConfigFileFromFS(fs billy.Filesystem, configfile string) (*Config, err
 
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	// nolint:errcheck // we don't care about the error here
-	defer cfgF.Close()
+	defer cfgF.Close() // nolint:errcheck
 
 	dec := yaml.NewDecoder(cfgF)
-
 	if err := dec.Decode(cfg); err != nil {
+		if err == io.EOF {
+			return cfg, nil
+		}
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 

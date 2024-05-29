@@ -20,9 +20,7 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stacklok/frizbee/internal/cli"
@@ -125,18 +123,17 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
+			ctx := context.Background()
 			r := NewContainerImagesReplacer(&config.Config{})
 			got, err := r.ParseString(ctx, tt.args.refstr)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, got)
+				require.Error(t, err)
+				require.Empty(t, got)
 				return
 			}
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -295,9 +292,10 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			ctx := context.Background()
 
 			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
-			got, err := r.ParseString(context.Background(), tt.args.action)
+			got, err := r.ParseString(ctx, tt.args.action)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
 				require.Empty(t, got, "Wanted empty string, got %v", got)
@@ -353,28 +351,28 @@ services:
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
+			ctx := context.Background()
+
 			r := NewContainerImagesReplacer(&config.Config{})
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
-				assert.True(t, modified)
-				assert.NotEmpty(t, newContent)
+				require.True(t, modified)
+				require.NotEmpty(t, newContent)
 			} else {
-				assert.False(t, modified)
-				assert.Empty(t, newContent)
+				require.False(t, modified)
+				require.Empty(t, newContent)
 			}
 
 			if tt.wantErr {
-				assert.False(t, modified)
-				assert.Empty(t, newContent)
-				assert.Error(t, err)
+				require.False(t, modified)
+				require.Empty(t, newContent)
+				require.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, newContent)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, newContent)
 		})
 	}
 }
@@ -473,8 +471,8 @@ jobs:
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
+			ctx := context.Background()
+
 			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 			if tt.useCustomRegex {
 				r = r.WithUserRegex(tt.regex)
@@ -482,22 +480,22 @@ jobs:
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 
 			if tt.modified {
-				assert.True(t, modified)
-				assert.Equal(t, tt.expected, newContent)
+				require.True(t, modified)
+				require.Equal(t, tt.expected, newContent)
 			} else {
-				assert.False(t, modified)
-				assert.Equal(t, tt.before, newContent)
+				require.False(t, modified)
+				require.Equal(t, tt.before, newContent)
 			}
 
 			if tt.wantErr {
-				assert.False(t, modified)
-				assert.Equal(t, tt.before, newContent)
-				assert.Error(t, err)
+				require.False(t, modified)
+				require.Equal(t, tt.before, newContent)
+				require.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, newContent)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, newContent)
 		})
 	}
 }
