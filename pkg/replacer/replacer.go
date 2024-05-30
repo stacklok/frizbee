@@ -279,6 +279,14 @@ func parseAndReplaceReferencesInFile(
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// Skip commented lines
+		if strings.HasPrefix(strings.TrimLeft(line, " \t\n\r"), "#") {
+			// Write the line to the content builder buffer
+			contentBuilder.WriteString(line + "\n")
+			continue
+		}
+
 		// See if we can match an entity reference in the line
 		newLine := re.ReplaceAllStringFunc(line, func(matchedLine string) string {
 			// Modify the reference in the line
@@ -329,6 +337,11 @@ func listReferencesInFile(
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// Skip commented lines
+		if strings.HasPrefix(strings.TrimLeft(line, " \t\n\r"), "#") {
+			continue
+		}
 
 		// See if we can match an entity reference in the line
 		foundEntries := re.FindAllString(line, -1)

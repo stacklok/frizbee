@@ -116,13 +116,34 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		// TODO: Create a dedicated container image for this test and push it so that latest doesnt change
+		//{
+		//	name: "container reference with no tag or digest",
+		//	args: args{
+		//		refstr: "nginx",
+		//	},
+		//	want: &interfaces.EntityRef{
+		//		Name:   "index.docker.io/library/nginx",
+		//		Ref:    "sha256:faef0b115e699b1e70b1f9a939ea2bc62c26485f6b72e91c8a7b236f1f8589c1",
+		//		Type:   image.ReferenceType,
+		//		Tag:    "latest",
+		//		Prefix: "",
+		//	},
+		//	wantErr: false,
+		//},
+		{
+			name: "invalid reference with special characters",
+			args: args{
+				refstr: "nginx@#$$%%^&*",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx := context.Background()
 			r := NewContainerImagesReplacer(&config.Config{})
 			got, err := r.ParseString(ctx, tt.args.refstr)
@@ -131,7 +152,6 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 				require.Empty(t, got)
 				return
 			}
-
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})
@@ -286,23 +306,45 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 				Prefix: "",
 			},
 		},
+		{
+			name: "invalid action reference",
+			args: args{
+				action: "invalid-reference",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "missing action tag",
+			args: args{
+				action: "actions/checkout",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "action with special characters",
+			args: args{
+				action: "actions/checkout@#$$%%^&*",
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-
 			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
 			got, err := r.ParseString(ctx, tt.args.action)
 			if tt.wantErr {
-				require.Error(t, err, "Wanted error, got none")
-				require.Empty(t, got, "Wanted empty string, got %v", got)
+				require.Error(t, err)
+				require.Empty(t, got)
 				return
 			}
-			require.NoError(t, err, "Wanted no error, got %v", err)
-			require.Equal(t, tt.want, got, "Wanted %v, got %v", tt.want, got)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -341,36 +383,88 @@ services:
 `,
 			modified: true,
 		},
-		// Add more test cases as needed
+		{
+			name: "No image reference modification",
+			before: `
+version: v1
+services:
+  - name: minder-app
+    image: minder:latest
+`,
+			expected: `
+version: v1
+services:
+  - name: minder-app
+    image: minder:latest
+`,
+			modified: false,
+		},
+		{
+			name: "Invalid image reference format",
+			before: `
+version: v1
+services:
+  - name: invalid-service
+    image: invalid@@reference
+`,
+			expected: `
+version: v1
+services:
+  - name: invalid-service
+    image: invalid@@reference
+`,
+			modified: false,
+			wantErr:  false,
+		},
+		{
+			name: "Multiple valid image references",
+			before: `
+version: v1
+services:
+  - name: kube-apiserver
+    image: registry.k8s.io/kube-apiserver:v1.20.0
+  - name: kube-controller-manager
+    image: registry.k8s.io/kube-controller-manager:v1.15.0
+  - name: minder-app
+    image: minder:latest
+  # - name: nginx
+  #  image: nginx:latest
+`,
+			expected: `
+version: v1
+services:
+  - name: kube-apiserver
+    image: registry.k8s.io/kube-apiserver@sha256:8b8125d7a6e4225b08f04f65ca947b27d0cc86380bf09fab890cc80408230114 # v1.20.0
+  - name: kube-controller-manager
+    image: registry.k8s.io/kube-controller-manager@sha256:835f32a5cdb30e86f35675dd91f9c7df01d48359ab8b51c1df866a2c7ea2e870 # v1.15.0
+  - name: minder-app
+    image: minder:latest
+  # - name: nginx
+  #  image: nginx:latest
+`,
+			modified: true,
+		},
 	}
-
-	// Define a regular expression to match YAML tags containing "image"
 	for _, tt := range testCases {
 		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx := context.Background()
-
 			r := NewContainerImagesReplacer(&config.Config{})
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
-
 			if tt.modified {
 				require.True(t, modified)
-				require.NotEmpty(t, newContent)
+				require.Equal(t, tt.expected, newContent)
 			} else {
 				require.False(t, modified)
-				require.Empty(t, newContent)
+				require.Equal(t, tt.before, newContent)
 			}
-
 			if tt.wantErr {
 				require.False(t, modified)
-				require.Empty(t, newContent)
+				require.Equal(t, tt.before, newContent)
 				require.Error(t, err)
 				return
 			}
-
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, newContent)
 		})
@@ -425,6 +519,79 @@ jobs:
 			wantErr:  false,
 		},
 		{
+			name: "No action reference modification",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      # - uses: actions/checkout@v2
+`,
+			expected: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      # - uses: actions/checkout@v2
+`,
+			modified: false,
+		},
+		{
+			name: "Invalid action reference format",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: invalid@@reference
+`,
+			expected: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: invalid@@reference
+`,
+			modified: false,
+			wantErr:  false,
+		},
+		{
+			name: "Multiple valid action references",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@v2
+      - uses: xt0rted/markdownlint-problem-matcher@v1
+`,
+			expected: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: xt0rted/markdownlint-problem-matcher@c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0 # v1
+`,
+			modified: true,
+		},
+		{
 			name: "Fail with custom regex",
 			before: `
 name: Linter
@@ -461,24 +628,17 @@ jobs:
 			regex:          "invalid-regexp",
 			useCustomRegex: true,
 		},
-		// Add more test cases as needed
 	}
-
-	// Define a regular expression to match YAML tags containing "image"
 	for _, tt := range testCases {
 		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx := context.Background()
-
 			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
 			if tt.useCustomRegex {
 				r = r.WithUserRegex(tt.regex)
 			}
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
-
 			if tt.modified {
 				require.True(t, modified)
 				require.Equal(t, tt.expected, newContent)
@@ -486,14 +646,12 @@ jobs:
 				require.False(t, modified)
 				require.Equal(t, tt.before, newContent)
 			}
-
 			if tt.wantErr {
 				require.False(t, modified)
 				require.Equal(t, tt.before, newContent)
 				require.Error(t, err)
 				return
 			}
-
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, newContent)
 		})
