@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stacklok/frizbee/internal/cli"
@@ -28,6 +29,7 @@ import (
 	"github.com/stacklok/frizbee/pkg/replacer/actions"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
 	"github.com/stacklok/frizbee/pkg/utils/config"
+	"github.com/stacklok/frizbee/pkg/utils/ghrest"
 )
 
 func TestReplacer_ParseContainerImageString(t *testing.T) {
@@ -654,6 +656,170 @@ jobs:
 			}
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, newContent)
+		})
+	}
+}
+
+func TestReplacer_NewGitHubActionsReplacer(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{}
+	tests := []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{name: "valid config", cfg: cfg},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := NewGitHubActionsReplacer(tt.cfg)
+			require.NotNil(t, r)
+			require.IsType(t, &Replacer{}, r)
+			require.IsType(t, actions.New(), r.parser)
+		})
+	}
+}
+
+func TestReplacer_NewContainerImagesReplacer(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{}
+	tests := []struct {
+		name string
+		cfg  *config.Config
+	}{
+		{name: "valid config", cfg: cfg},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := NewContainerImagesReplacer(tt.cfg)
+			require.NotNil(t, r)
+			require.IsType(t, &Replacer{}, r)
+			require.IsType(t, image.New(), r.parser)
+		})
+	}
+}
+
+func TestReplacer_WithGitHubClient(t *testing.T) {
+	t.Parallel()
+
+	r := &Replacer{}
+	tests := []struct {
+		name  string
+		token string
+	}{
+		{name: "valid token", token: "valid_token"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r = r.WithGitHubClient(tt.token)
+			require.NotNil(t, r)
+			require.IsType(t, ghrest.NewClient(tt.token), r.rest)
+		})
+	}
+}
+
+func TestReplacer_WithUserRegex(t *testing.T) {
+	t.Parallel()
+
+	r := &Replacer{parser: actions.New()}
+	tests := []struct {
+		name  string
+		regex string
+	}{
+		{name: "valid regex", regex: `^test-regex$`},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r = r.WithUserRegex(tt.regex)
+			require.Equal(t, tt.regex, r.parser.GetRegex())
+		})
+	}
+}
+
+func TestReplacer_WithCacheDisabled(t *testing.T) {
+	t.Parallel()
+
+	r := &Replacer{parser: actions.New()}
+	tests := []struct {
+		name string
+	}{
+		{name: "disable cache"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r = r.WithCacheDisabled()
+			// we don't test if this passed here because it's an internal implementation detail
+			// but let's ensure we don't panic for some reason
+		})
+	}
+}
+
+func TestReplacer_ParsePathInFS(t *testing.T) {
+	t.Parallel()
+
+	r := &Replacer{parser: actions.New(), cfg: config.Config{}}
+	fs := memfs.New()
+	tests := []struct {
+		name    string
+		base    string
+		wantErr bool
+	}{
+		{name: "valid base", base: "some-base", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := r.ParsePathInFS(context.Background(), fs, tt.base)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestReplacer_ListPathInFS(t *testing.T) {
+	t.Parallel()
+
+	r := &Replacer{parser: actions.New(), cfg: config.Config{}}
+	fs := memfs.New()
+	tests := []struct {
+		name    string
+		base    string
+		wantErr bool
+	}{
+		{name: "valid base", base: "some-base", wantErr: false},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := r.ListPathInFS(fs, tt.base)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
