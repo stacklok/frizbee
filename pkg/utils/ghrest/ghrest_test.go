@@ -6,14 +6,11 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/h2non/gock.v1"
 )
-
-const ContextTimeout = 4 * time.Second
 
 // nolint:gocyclo
 func TestClientFunctions(t *testing.T) {

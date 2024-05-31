@@ -75,9 +75,15 @@ func NewContainerImagesReplacer(cfg *config.Config) *Replacer {
 	}
 }
 
-// WithGitHubClient creates an authenticated GitHub client
-func (r *Replacer) WithGitHubClient(token string) *Replacer {
+// WithGitHubClientFromToken creates an authenticated GitHub client from a token
+func (r *Replacer) WithGitHubClientFromToken(token string) *Replacer {
 	client := ghrest.NewClient(token)
+	r.rest = client
+	return r
+}
+
+// WithGitHubClient sets the GitHub client to use
+func (r *Replacer) WithGitHubClient(client interfaces.REST) *Replacer {
 	r.rest = client
 	return r
 }

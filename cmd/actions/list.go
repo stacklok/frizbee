@@ -78,7 +78,7 @@ func list(cmd *cobra.Command, args []string) error {
 	// Create a new replacer
 	r := replacer.NewGitHubActionsReplacer(cfg).
 		WithUserRegex(cliFlags.Regex).
-		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+		WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
 
 	// List the references in the directory
 	res, err := r.ListPath(dir)

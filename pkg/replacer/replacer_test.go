@@ -338,7 +338,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv("GITHUB_TOKEN"))
+			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv("GITHUB_TOKEN"))
 			got, err := r.ParseString(ctx, tt.args.action)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -419,7 +419,7 @@ services:
 			wantErr:  false,
 		},
 		{
-			name: "Multiple valid image references",
+			name: "Multiple valid image references with one commented",
 			before: `
 version: v1
 services:
@@ -446,6 +446,33 @@ services:
 `,
 			modified: true,
 		},
+		{
+			name: "Valid image reference without specifying the tag",
+			before: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mount-host
+  namespace: playground
+spec:
+  containers:
+  - name: mount-host
+    image: alpine
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - name: host-root
+      mountPath: /host
+      readOnly: true
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+      type: Directory
+`,
+			expected: "",
+			modified: true,
+		},
 	}
 	for _, tt := range testCases {
 		tt := tt
@@ -454,13 +481,6 @@ services:
 			ctx := context.Background()
 			r := NewContainerImagesReplacer(&config.Config{})
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
-			if tt.modified {
-				require.True(t, modified)
-				require.Equal(t, tt.expected, newContent)
-			} else {
-				require.False(t, modified)
-				require.Equal(t, tt.before, newContent)
-			}
 			if tt.wantErr {
 				require.False(t, modified)
 				require.Equal(t, tt.before, newContent)
@@ -468,7 +488,18 @@ services:
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tt.expected, newContent)
+			if tt.modified {
+				require.True(t, modified)
+				if tt.expected != "" {
+					require.Equal(t, tt.expected, newContent)
+				} else {
+					require.NotEmpty(t, tt.before, newContent)
+				}
+			} else {
+				require.False(t, modified)
+				require.Equal(t, tt.before, newContent)
+			}
+
 		})
 	}
 }
@@ -636,7 +667,7 @@ jobs:
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
 			if tt.useCustomRegex {
 				r = r.WithUserRegex(tt.regex)
 			}
@@ -721,7 +752,7 @@ func TestReplacer_WithGitHubClient(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			r = r.WithGitHubClient(tt.token)
+			r = r.WithGitHubClientFromToken(tt.token)
 			require.NotNil(t, r)
 			require.IsType(t, ghrest.NewClient(tt.token), r.rest)
 		})

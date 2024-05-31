@@ -84,7 +84,7 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 	// Create a new replacer
 	r := replacer.NewGitHubActionsReplacer(cfg).
 		WithUserRegex(cliFlags.Regex).
-		WithGitHubClient(os.Getenv(cli.GitHubTokenEnvKey))
+		WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
 
 	if cli.IsPath(pathOrRef) {
 		dir := filepath.Clean(pathOrRef)
