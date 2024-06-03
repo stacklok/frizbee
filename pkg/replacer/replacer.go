@@ -64,6 +64,7 @@ func NewGitHubActionsReplacer(cfg *config.Config) *Replacer {
 	return &Replacer{
 		cfg:    *cfg,
 		parser: actions.New(),
+		rest:   ghrest.NewClient(""),
 	}
 }
 
@@ -72,6 +73,7 @@ func NewContainerImagesReplacer(cfg *config.Config) *Replacer {
 	return &Replacer{
 		cfg:    *cfg,
 		parser: image.New(),
+		rest:   ghrest.NewClient(""),
 	}
 }
 
