@@ -90,7 +90,7 @@ func (r *Replacer) WithGitHubClient(client interfaces.REST) *Replacer {
 
 // WithUserRegex sets a user-provided regex for the parser
 func (r *Replacer) WithUserRegex(regex string) *Replacer {
-	if r.parser != nil {
+	if r.parser != nil && regex != "" {
 		r.parser.SetRegex(regex)
 	}
 	return r
