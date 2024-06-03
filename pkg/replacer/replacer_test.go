@@ -854,3 +854,320 @@ func TestReplacer_ListPathInFS(t *testing.T) {
 		})
 	}
 }
+
+func TestReplacer_ListContainerImagesInFile(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		before         string
+		expected       *ListResult
+		regex          string
+		wantErr        bool
+		useCustomRegex bool
+	}{
+		{
+			name: "Lust image reference",
+			before: `
+version: v1
+services:
+ - name: kube-apiserver
+   image: registry.k8s.io/kube-apiserver:v1.20.0
+ - name: kube-controller-manager
+   image: registry.k8s.io/kube-controller-manager:v1.15.0
+ - name: minder-app
+   image: minder:latest
+`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{
+					{
+						Name: "registry.k8s.io/kube-apiserver",
+						Ref:  "v1.20.0",
+						Type: image.ReferenceType,
+					},
+					{
+						Name: "registry.k8s.io/kube-controller-manager",
+						Ref:  "v1.15.0",
+						Type: image.ReferenceType,
+					},
+					{
+						Name: "minder",
+						Ref:  "latest",
+						Type: image.ReferenceType,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "No image reference modification",
+			before: `
+		version: v1
+		services:
+		- name: minder-app
+		  # image: minder:latest
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid image reference format",
+			before: `
+		version: v1
+		services:
+		- name: invalid-service
+		  image: invalid@@reference
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Multiple valid image references with one commented",
+			before: `
+		version: v1
+		services:
+		- name: kube-apiserver
+		  image: registry.k8s.io/kube-apiserver@sha256:8b8125d7a6e4225b08f04f65ca947b27d0cc86380bf09fab890cc80408230114 # v1.20.0
+		- name: kube-controller-manager
+		  image: registry.k8s.io/kube-controller-manager@sha256:835f32a5cdb30e86f35675dd91f9c7df01d48359ab8b51c1df866a2c7ea2e870 # v1.15.0
+		- name: minder-app
+		  image: minder:latest
+		# - name: nginx
+		#  image: nginx:latest
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{
+					{
+						Name: "registry.k8s.io/kube-apiserver",
+						Ref:  "sha256:8b8125d7a6e4225b08f04f65ca947b27d0cc86380bf09fab890cc80408230114",
+						Type: image.ReferenceType,
+					},
+					{
+						Name: "registry.k8s.io/kube-controller-manager",
+						Ref:  "sha256:835f32a5cdb30e86f35675dd91f9c7df01d48359ab8b51c1df866a2c7ea2e870",
+						Type: image.ReferenceType,
+					},
+					{
+						Name: "minder",
+						Ref:  "latest",
+						Type: image.ReferenceType,
+					},
+				},
+			},
+		},
+		{
+			name: "Valid image reference without specifying the tag",
+			before: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mount-host
+  namespace: playground
+spec:
+  containers:
+  - name: mount-host
+    image: alpine
+    command: ["sleep"]
+    args: ["infinity"]
+    volumeMounts:
+    - name: host-root
+      mountPath: /host
+      readOnly: true
+  volumes:
+  - name: host-root
+    hostPath:
+      path: /
+      type: Directory
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{
+					{
+						Name: "alpine",
+						Ref:  "latest",
+						Type: image.ReferenceType,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range testCases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := NewContainerImagesReplacer(&config.Config{})
+			listRes, err := r.ListInFile(strings.NewReader(tt.before))
+			if tt.wantErr {
+				require.Nil(t, listRes)
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, len(tt.expected.Entities), len(listRes.Entities))
+			for _, entity := range tt.expected.Entities {
+				require.Contains(t, listRes.Entities, entity)
+			}
+		})
+	}
+}
+
+func TestReplacer_ListGitHubActionsInFile(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		before         string
+		expected       *ListResult
+		regex          string
+		wantErr        bool
+		useCustomRegex bool
+	}{
+		{
+			name: "List image reference",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be listed
+      - uses: actions/checkout@v2
+      - uses: xt0rted/markdownlint-problem-matcher@v1
+      - name: "Run Markdown linter"
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: src/*.md
+`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{
+					{
+						Name: "actions/checkout",
+						Ref:  "v2",
+						Type: actions.ReferenceType,
+					},
+					{
+						Name: "xt0rted/markdownlint-problem-matcher",
+						Ref:  "v1",
+						Type: actions.ReferenceType,
+					},
+					{
+						Name: "avtodev/markdown-lint",
+						Ref:  "v1",
+						Type: image.ReferenceType,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "No action references",
+			before: `
+		name: Linter
+		on: pull_request
+		jobs:
+		 build:
+		   runs-on: ubuntu-latest
+		   steps:
+		     - uses: ./minder/server.yml # this should not be replaced
+		     # - uses: actions/checkout@v2
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid action reference format",
+			before: `
+		name: Linter
+		on: pull_request
+		jobs:
+		 build:
+		   runs-on: ubuntu-latest
+		   steps:
+		     - uses: invalid@@reference
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Multiple valid action references",
+			before: `
+		name: Linter
+		on: pull_request
+		jobs:
+		 build:
+		   runs-on: ubuntu-latest
+		   steps:
+		     - uses: ./minder/server.yml # this should not be replaced
+		     - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+		     - uses: xt0rted/markdownlint-problem-matcher@c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0 # v1
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{
+					{
+						Name: "actions/checkout",
+						Ref:  "ee0669bd1cc54295c223e0bb666b733df41de1c5",
+						Type: actions.ReferenceType,
+					},
+					{
+						Name: "xt0rted/markdownlint-problem-matcher",
+						Ref:  "c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0",
+						Type: actions.ReferenceType,
+					},
+				},
+			},
+		},
+		{
+			name: "Fail with custom regex",
+			before: `
+		name: Linter
+		on: pull_request
+		jobs:
+		 build:
+		   runs-on: ubuntu-latest
+		   steps:
+		     - uses: ./minder/server.yml # this should not be replaced
+		     - uses: actions/checkout@v2
+		     - uses: xt0rted/markdownlint-problem-matcher@v1
+		     - name: "Run Markdown linter"
+		       uses: docker://avtodev/markdown-lint:v1
+		       with:
+		         args: src/*.md
+		`,
+			expected: &ListResult{
+				Entities: []interfaces.EntityRef{},
+			},
+			wantErr:        false,
+			regex:          "invalid-regexp",
+			useCustomRegex: true,
+		},
+	}
+	for _, tt := range testCases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
+			if tt.useCustomRegex {
+				r = r.WithUserRegex(tt.regex)
+			}
+			listRes, err := r.ListInFile(strings.NewReader(tt.before))
+			if tt.wantErr {
+				require.Nil(t, listRes)
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, len(tt.expected.Entities), len(listRes.Entities))
+			for _, entity := range tt.expected.Entities {
+				require.Contains(t, listRes.Entities, entity)
+			}
+		})
+	}
+}
