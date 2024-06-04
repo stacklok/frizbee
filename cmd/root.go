@@ -23,12 +23,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/stacklok/frizbee/cmd/containerimage"
-	"github.com/stacklok/frizbee/cmd/dockercompose"
-	"github.com/stacklok/frizbee/cmd/ghactions"
-	"github.com/stacklok/frizbee/cmd/kubernetes"
+	"github.com/stacklok/frizbee/cmd/actions"
+	"github.com/stacklok/frizbee/cmd/image"
 	"github.com/stacklok/frizbee/cmd/version"
-	"github.com/stacklok/frizbee/pkg/config"
+	"github.com/stacklok/frizbee/pkg/utils/config"
 )
 
 // Execute runs the root command.
@@ -41,10 +39,8 @@ func Execute() {
 
 	rootCmd.PersistentFlags().StringP("config", "c", ".frizbee.yml", "config file (default is .frizbee.yml)")
 
-	rootCmd.AddCommand(ghactions.CmdGHActions())
-	rootCmd.AddCommand(containerimage.CmdContainerImage())
-	rootCmd.AddCommand(dockercompose.CmdCompose())
-	rootCmd.AddCommand(kubernetes.CmdK8s())
+	rootCmd.AddCommand(actions.CmdGHActions())
+	rootCmd.AddCommand(image.CmdContainerImage())
 	rootCmd.AddCommand(version.CmdVersion())
 
 	if err := rootCmd.ExecuteContext(context.Background()); err != nil {

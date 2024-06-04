@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Stacklok, Inc.
+// Copyright 2024 Stacklok, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package version
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/stacklok/frizbee/pkg/constants"
+	"github.com/stacklok/frizbee/internal/cli"
 )
 
 // CmdVersion is the Cobra command for the version command.
@@ -29,7 +29,7 @@ func CmdVersion() *cobra.Command {
 		Short: "Print frizbee CLI version",
 		Long:  "The frizbee version command prints the version of the frizbee CLI.",
 		Run: func(cmd *cobra.Command, _ []string) {
-			cmd.Println(constants.VerboseCLIVersion)
+			cmd.Println(cli.VerboseCLIVersion)
 		},
 	}
 }
