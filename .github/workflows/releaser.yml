@@ -49,6 +49,8 @@ jobs:
           echo "version=$(git describe --tags --always --dirty | cut -c2-)" >> $GITHUB_OUTPUT
           echo "tree-state=$(if git diff --quiet; then echo "clean"; else echo "dirty"; fi)" >> $GITHUB_OUTPUT
   release:
+    needs:
+      - ldflags_args
     name: Build and release
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
