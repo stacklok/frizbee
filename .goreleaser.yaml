@@ -35,7 +35,7 @@ archives:
 brews:
   - homepage: 'https://github.com/stacklok/frizbee'
     description: 'frizbee is a tool you may throw a tag at and it comes back with a checksum.'
-    folder: Formula
+    directory: Formula
     commit_author:
       name: stacklokbot
       email: info@stacklok.com
