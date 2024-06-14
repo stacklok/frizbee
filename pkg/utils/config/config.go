@@ -59,6 +59,7 @@ func FromCommand(cmd *cobra.Command) (*Config, error) {
 type Config struct {
 	Platform  string    `yaml:"platform" mapstructure:"platform"`
 	GHActions GHActions `yaml:"ghactions" mapstructure:"ghactions"`
+	Images    Images    `yaml:"images" mapstructure:"images"`
 }
 
 // GHActions is the GitHub Actions configuration.
@@ -72,15 +73,38 @@ type Filter struct {
 	Exclude []string `yaml:"exclude" mapstructure:"exclude"`
 }
 
+// Images is the image configuration.
+type Images struct {
+	ImageFilter `yaml:",inline" mapstructure:",inline"`
+}
+
+// ImageFilter is the image filter configuration.
+type ImageFilter struct {
+	// ExcludeImages is a regex that must match in order for an image to be excluded and not pinned
+	ExcludeImages []string `yaml:"exclude_images" mapstructure:"exclude_images"`
+	ExcludeTags   []string `yaml:"exclude_tags" mapstructure:"exclude_tags"`
+}
+
 // ParseConfigFile parses a configuration file.
 func ParseConfigFile(configfile string) (*Config, error) {
 	bfs := osfs.New(".")
 	return ParseConfigFileFromFS(bfs, configfile)
 }
 
+func defaultConfig() *Config {
+	return &Config{
+		Images: Images{
+			ImageFilter: ImageFilter{
+				ExcludeImages: []string{"scratch"},
+				ExcludeTags:   []string{"latest"},
+			},
+		},
+	}
+}
+
 // ParseConfigFileFromFS parses a configuration file from a filesystem.
 func ParseConfigFileFromFS(fs billy.Filesystem, configfile string) (*Config, error) {
-	cfg := &Config{}
+	cfg := defaultConfig()
 	cleancfgfile := filepath.Clean(configfile)
 	cfgF, err := fs.Open(cleancfgfile)
 	if err != nil {
@@ -94,10 +118,9 @@ func ParseConfigFileFromFS(fs billy.Filesystem, configfile string) (*Config, err
 
 	dec := yaml.NewDecoder(cfgF)
 	if err := dec.Decode(cfg); err != nil {
-		if err == io.EOF {
-			return cfg, nil
+		if err != io.EOF {
+			return nil, fmt.Errorf("failed to decode config file: %w", err)
 		}
-		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 
 	return cfg, nil

@@ -82,7 +82,7 @@ func TestParseConfigFile(t *testing.T) {
 		{
 			name:           "FileNotFound",
 			fileName:       "nonexistent.yaml",
-			expectedResult: &Config{},
+			expectedResult: defaultConfig(),
 		},
 		{
 			name:        "InvalidYaml",
@@ -100,6 +100,11 @@ ghactions:
   exclude:
     - pattern1
     - pattern2
+images:
+  exclude_images:
+    - notthisone
+  exclude_tags:
+    - notthistag	
 `,
 			},
 			expectedResult: &Config{
@@ -109,13 +114,19 @@ ghactions:
 						Exclude: []string{"pattern1", "pattern2"},
 					},
 				},
+				Images: Images{
+					ImageFilter: ImageFilter{
+						ExcludeImages: []string{"notthisone"},
+						ExcludeTags:   []string{"notthistag"},
+					},
+				},
 			},
 		},
 		{
 			name:           "EmptyFile",
 			fileName:       "empty.yaml",
 			fsContent:      map[string]string{"empty.yaml": ""},
-			expectedResult: &Config{},
+			expectedResult: defaultConfig(),
 		},
 	}
 
@@ -140,6 +151,12 @@ ghactions:
 				require.Equal(t, tt.expectedResult.Platform, cfg.Platform)
 				if cfg.GHActions.Exclude != nil {
 					require.Equal(t, tt.expectedResult.GHActions.Exclude, cfg.GHActions.Exclude)
+				}
+				if cfg.Images.ExcludeImages != nil {
+					require.Equal(t, tt.expectedResult.Images.ExcludeImages, cfg.Images.ExcludeImages)
+				}
+				if cfg.Images.ExcludeTags != nil {
+					require.Equal(t, tt.expectedResult.Images.ExcludeTags, cfg.Images.ExcludeTags)
 				}
 			}
 		})
