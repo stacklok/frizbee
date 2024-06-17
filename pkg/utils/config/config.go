@@ -70,7 +70,8 @@ type GHActions struct {
 // Filter is a common configuration for filtering out patterns.
 type Filter struct {
 	// Exclude is a list of patterns to exclude.
-	Exclude []string `yaml:"exclude" mapstructure:"exclude"`
+	Exclude         []string `yaml:"exclude" mapstructure:"exclude"`
+	ExcludeBranches []string `yaml:"exclude_branches" mapstructure:"exclude_branches"`
 }
 
 // Images is the image configuration.
@@ -93,6 +94,11 @@ func ParseConfigFile(configfile string) (*Config, error) {
 
 func defaultConfig() *Config {
 	return &Config{
+		GHActions: GHActions{
+			Filter: Filter{
+				ExcludeBranches: []string{"*"},
+			},
+		},
 		Images: Images{
 			ImageFilter: ImageFilter{
 				ExcludeImages: []string{"scratch"},

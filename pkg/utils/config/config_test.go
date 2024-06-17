@@ -91,6 +91,31 @@ func TestParseConfigFile(t *testing.T) {
 			expectError: true,
 		},
 		{
+			name:     "DontIngoreBranches",
+			fileName: "dont_ignore_branches.yaml",
+			fsContent: map[string]string{
+				"dont_ignore_branches.yaml": `
+platform: linux/amd64
+ghactions:
+  exclude_branches:
+`,
+			},
+			expectedResult: &Config{
+				Platform: "linux/amd64",
+				GHActions: GHActions{
+					Filter: Filter{
+						ExcludeBranches: []string{},
+					},
+				},
+				Images: Images{
+					ImageFilter: ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			},
+		},
+		{
 			name:     "ValidYaml",
 			fileName: "valid.yaml",
 			fsContent: map[string]string{
@@ -111,7 +136,8 @@ images:
 				Platform: "linux/amd64",
 				GHActions: GHActions{
 					Filter: Filter{
-						Exclude: []string{"pattern1", "pattern2"},
+						Exclude:         []string{"pattern1", "pattern2"},
+						ExcludeBranches: []string{"*"},
 					},
 				},
 				Images: Images{
@@ -157,6 +183,9 @@ images:
 				}
 				if cfg.Images.ExcludeTags != nil {
 					require.Equal(t, tt.expectedResult.Images.ExcludeTags, cfg.Images.ExcludeTags)
+				}
+				if cfg.GHActions.ExcludeBranches != nil {
+					require.Equal(t, tt.expectedResult.GHActions.ExcludeBranches, cfg.GHActions.ExcludeBranches)
 				}
 			}
 		})

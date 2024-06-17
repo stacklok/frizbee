@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/google/go-github/v61/github"
@@ -144,7 +145,7 @@ func (p *Parser) replaceAction(
 			sum = val
 		} else {
 			// Get the checksum for the action reference
-			sum, err = GetChecksum(ctx, restIf, act, ref)
+			sum, err = GetChecksum(ctx, cfg.GHActions, restIf, act, ref)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get checksum for action '%s': %w", matchedLine, err)
 			}
@@ -153,7 +154,7 @@ func (p *Parser) replaceAction(
 		}
 	} else {
 		// Get the checksum for the action reference
-		sum, err = GetChecksum(ctx, restIf, act, ref)
+		sum, err = GetChecksum(ctx, cfg.GHActions, restIf, act, ref)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get checksum for action '%s': %w", matchedLine, err)
 		}
@@ -255,7 +256,7 @@ func ParseActionReference(input string) (action string, reference string, err er
 }
 
 // GetChecksum returns the checksum for a given action and tag.
-func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string) (string, error) {
+func GetChecksum(ctx context.Context, cfg config.GHActions, restIf interfaces.REST, action, ref string) (string, error) {
 	owner, repo, err := parseActionFragments(action)
 	if err != nil {
 		return "", err
@@ -274,6 +275,12 @@ func GetChecksum(ctx context.Context, restIf interfaces.REST, action, ref string
 	}
 
 	// check branch
+	if excludeBranch(cfg.Filter.ExcludeBranches, ref) {
+		// if a branch is excluded, we won't know if it's a valid reference
+		// but that's OK - we just won't touch that reference
+		return "", fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, ref)
+	}
+
 	res, err = getCheckSumForBranch(ctx, restIf, owner, repo, ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to get checksum for branch: %w", err)
@@ -317,6 +324,17 @@ func getCheckSumForBranch(ctx context.Context, restIf interfaces.REST, owner, re
 	}
 
 	return doGetReference(ctx, restIf, path)
+}
+
+func excludeBranch(excludes []string, branch string) bool {
+	if len(excludes) == 0 {
+		return false
+	}
+	if slices.Contains(excludes, "*") {
+		return true
+	}
+
+	return slices.Contains(excludes, branch)
 }
 
 func doGetReference(ctx context.Context, restIf interfaces.REST, path string) (string, error) {

@@ -305,6 +305,13 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "aquasecurity/trivy-action with ignored branch returns error",
+			args: args{
+				action: "aquasecurity/trivy-action@main",
+			},
+			wantErr: true,
+		},
+		{
 			name: "actions/checkout with invalid tag returns error",
 			args: args{
 				action: "actions/checkout@v4.1.1.1",
@@ -393,6 +400,11 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			conf := &config.Config{
+				GHActions: config.GHActions{
+					Filter: config.Filter{
+						ExcludeBranches: []string{"main"},
+					},
+				},
 				Images: config.Images{
 					ImageFilter: config.ImageFilter{
 						ExcludeImages: []string{"scratch"},
@@ -793,6 +805,41 @@ jobs:
 			wantErr:  false,
 		},
 		{
+			name: "Replace actions with tags, not with branches",
+			before: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@v2
+      - uses: aquasecurity/trivy-action@main
+      - name: "Run Markdown linter"
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: src/*.md
+`,
+			expected: `
+name: Linter
+on: pull_request
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./minder/server.yml # this should not be replaced
+      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: aquasecurity/trivy-action@main
+      - name: "Run Markdown linter"
+        uses: docker://index.docker.io/avtodev/markdown-lint@sha256:6aeedc2f49138ce7a1cd0adffc1b1c0321b841dc2102408967d9301c031949ee # v1
+        with:
+          args: src/*.md
+`,
+			modified: true,
+			wantErr:  false,
+		},
+		{
 			name: "No action reference modification",
 			before: `
 name: Linter
@@ -908,7 +955,13 @@ jobs:
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
+			r := NewGitHubActionsReplacer(&config.Config{
+				GHActions: config.GHActions{
+					Filter: config.Filter{
+						ExcludeBranches: []string{"*"},
+					},
+				},
+			}).WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
 			if tt.useCustomRegex {
 				r = r.WithUserRegex(tt.regex)
 			}
