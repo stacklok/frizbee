@@ -289,7 +289,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			},
 			want: &interfaces.EntityRef{
 				Name:   "bufbuild/buf-setup-action",
-				Ref:    "dde0b9351db90fbf78e345f41a57de8514bf1091",
+				Ref:    "59e8ac0671772e5ffef08a41b3aec11d39fc1165",
 				Type:   actions.ReferenceType,
 				Tag:    "v1",
 				Prefix: "",
