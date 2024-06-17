@@ -173,6 +173,25 @@ ghactions:
 
 ```
 
+Similarly, you can exclude actions that are referenced using a particular branch:
+```yml
+ghactions:
+  exclude_branches:
+     - main
+     - master
+```
+By default, Frizbee will exclude all actions that are referenced by a branch and only pin actions that are referenced by a tag.
+
+You can also configure Frizbee to skip processing certain container images or certain tags:
+```yml
+images:
+  exclude_images:
+    - busybox
+  exclude_tags:
+    - devel
+```
+By default, Frizbee will exclude the image named `scratch` and the tag `latest`.
+
 ## Contributing
 
 We welcome contributions to Frizbee. Please see our [Contributing](./CONTRIBUTING.md) guide for more information.
