@@ -20,12 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	dockerparser "github.com/moby/buildkit/frontend/dockerfile/parser"
 
 	"github.com/stacklok/frizbee/internal/cli"
 	"github.com/stacklok/frizbee/pkg/interfaces"
@@ -36,7 +38,7 @@ import (
 const (
 	// ContainerImageRegex is regular expression pattern to match container image usage in YAML
 	// nolint:lll
-	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+|[^\s"']+)(:[^\s"']+)?(@[^\s"']+)?["']?|FROM\s+([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)`
+	ContainerImageRegex = `image\s*:\s*["']?([^\s"']+/[^\s"']+|[^\s"']+)(:[^\s"']+)?(@[^\s"']+)?["']?|FROM\s+(--platform=[^\s]+[^\s]*\s+)?([^\s]+(/[^\s]+)?(:[^\s]+)?(@[^\s]+)?)`
 	prefixFROM          = "FROM "
 	prefixImage         = "image: "
 	// ReferenceType is the type of the reference
@@ -47,6 +49,11 @@ const (
 type Parser struct {
 	regex string
 	cache store.RefCacher
+}
+
+type unresolvedImage struct {
+	imageRef string
+	flags    []string
 }
 
 // New creates a new Parser
@@ -79,32 +86,52 @@ func (p *Parser) Replace(
 	_ interfaces.REST,
 	cfg config.Config,
 ) (*interfaces.EntityRef, error) {
+	var imageRef string
+	var extraArgs string
+
 	// Trim the prefix
 	hasFROMPrefix := false
 	hasImagePrefix := false
 	// Check if the image reference has the FROM prefix, i.e. Dockerfile
 	if strings.HasPrefix(matchedLine, prefixFROM) {
-		matchedLine = strings.TrimPrefix(matchedLine, prefixFROM)
+		parsedFrom, err := getRefFromDockerfileFROM(matchedLine)
+		if err != nil {
+			return nil, err
+		}
+
 		// Check if the image reference should be excluded, i.e. scratch
-		if shouldExclude(matchedLine) {
+		if shouldSkipImageRef(&cfg, parsedFrom.imageRef) {
 			return nil, fmt.Errorf("image reference %s should be excluded - %w", matchedLine, interfaces.ErrReferenceSkipped)
 		}
+
+		imageRef = parsedFrom.imageRef
+		extraArgs = strings.Join(parsedFrom.flags, " ")
+		if extraArgs != "" {
+			extraArgs += " "
+		}
+
 		hasFROMPrefix = true
 	} else if strings.HasPrefix(matchedLine, prefixImage) {
 		// Check if the image reference has the image prefix, i.e. Kubernetes or Docker Compose YAML
-		matchedLine = strings.TrimPrefix(matchedLine, prefixImage)
+		imageRef = strings.TrimPrefix(matchedLine, prefixImage)
+		// Check if the image reference should be excluded, i.e. scratch
+		if shouldSkipImageRef(&cfg, imageRef) {
+			return nil, fmt.Errorf("image reference %s should be excluded - %w", matchedLine, interfaces.ErrReferenceSkipped)
+		}
 		hasImagePrefix = true
+	} else {
+		imageRef = matchedLine
 	}
 
 	// Get the digest of the image reference
-	imageRefWithDigest, err := GetImageDigestFromRef(ctx, matchedLine, cfg.Platform, p.cache)
+	imageRefWithDigest, err := GetImageDigestFromRef(ctx, imageRef, cfg.Platform, p.cache)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add the prefix back
 	if hasFROMPrefix {
-		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixFROM, imageRefWithDigest.Prefix)
+		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s%s", prefixFROM, extraArgs, imageRefWithDigest.Prefix)
 	} else if hasImagePrefix {
 		imageRefWithDigest.Prefix = fmt.Sprintf("%s%s", prefixImage, imageRefWithDigest.Prefix)
 	}
@@ -202,6 +229,54 @@ func GetImageDigestFromRef(ctx context.Context, imageRef, platform string, cache
 	}, nil
 }
 
-func shouldExclude(ref string) bool {
-	return ref == "scratch"
+func shouldSkipImageRef(cfg *config.Config, ref string) bool {
+	// Parse the image reference
+	nameRef, err := name.ParseReference(ref)
+	if err != nil {
+		// we wouldn't know how to resolve this reference, so let's skip
+		return true
+	}
+
+	imageName := getImageNameFromRef(nameRef)
+	if slices.Contains(cfg.Images.ImageFilter.ExcludeImages, imageName) {
+		return true
+	}
+
+	tag := nameRef.Identifier()
+	return slices.Contains(cfg.Images.ImageFilter.ExcludeTags, tag)
+}
+
+// TODO(jakub): this is a bit of a hack, but I didn't find a better way to get just the name
+func getImageNameFromRef(nameRef name.Reference) string {
+	fullRepositoryName := nameRef.Context().Name()
+	parts := strings.Split(fullRepositoryName, "/")
+	if len(parts) > 1 {
+		return parts[len(parts)-1]
+	}
+
+	return ""
+}
+func getRefFromDockerfileFROM(line string) (unresolvedImage, error) {
+	parseResult, err := dockerparser.Parse(strings.NewReader(line))
+	if err != nil {
+		return unresolvedImage{}, fmt.Errorf("failed to parse Dockerfile line: %w", err)
+	}
+
+	if len(parseResult.AST.Children) == 0 ||
+		parseResult.AST.Children[0] == nil ||
+		strings.ToUpper(parseResult.AST.Children[0].Value) != "FROM" {
+		return unresolvedImage{}, errors.New("invalid Dockerfile line: the first parsed node is not FROM")
+	}
+
+	fromNode := parseResult.AST.Children[0]
+
+	imgNode := parseResult.AST.Children[0].Next
+	if imgNode == nil {
+		return unresolvedImage{}, errors.New("invalid Dockerfile line: no image node found")
+	}
+
+	return unresolvedImage{
+		imageRef: imgNode.Value,
+		flags:    fromNode.Flags,
+	}, nil
 }

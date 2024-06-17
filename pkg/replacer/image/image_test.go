@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/utils/config"
 	"github.com/stacklok/frizbee/pkg/utils/store"
 )
@@ -78,13 +79,65 @@ func TestReplaceExcludedPath(t *testing.T) {
 
 	parser := New()
 	ctx := context.Background()
-	cfg := config.Config{GHActions: config.GHActions{Filter: config.Filter{Exclude: []string{"scratch"}}}}
+	cfg := config.Config{
+		Images: config.Images{
+			ImageFilter: config.ImageFilter{
+				ExcludeImages: []string{"scratch"},
+				ExcludeTags:   []string{"latest"},
+			},
+		},
+	}
 
 	tests := []struct {
 		name        string
 		matchedLine string
+		expected    error
 	}{
-		{"Replace excluded path", "FROM scratch"},
+		{
+			"Do not replace scratch FROM image",
+			"FROM scratch",
+			interfaces.ErrReferenceSkipped,
+		},
+		{
+			"Do not replace ubuntu:latest",
+			"FROM ubuntu:latest",
+			interfaces.ErrReferenceSkipped,
+		},
+		{
+			"Do not replace ubuntu:latest with AS",
+			"FROM ubuntu:latest AS builder",
+			interfaces.ErrReferenceSkipped,
+		},
+		{
+			"Do not replace ubuntu without a tag",
+			"FROM ubuntu",
+			interfaces.ErrReferenceSkipped,
+		},
+		{
+			"Do not replace ubuntu without a tag with a stage",
+			"FROM ubuntu AS builder",
+			interfaces.ErrReferenceSkipped,
+		},
+		{
+			"Replace ubuntu:22.04",
+			"FROM ubuntu:22.04",
+			nil,
+		},
+		{
+			"Replace ubuntu:22.04 with AS",
+			"FROM ubuntu:22.04 AS builder",
+			nil,
+		},
+		{
+			"Replace ubuntu:22.04 with AS",
+			"FROM --platform=linux/amd64 ubuntu:22.04 AS builder",
+			nil,
+		},
+		{
+			"Replace with repo reference and tag",
+			"FROM ghcr.io/stacklok/minder/helm/minder:0.20231123.829_ref.26ca90b",
+			nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -92,8 +145,12 @@ func TestReplaceExcludedPath(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := parser.Replace(ctx, tt.matchedLine, nil, cfg)
-			require.Error(t, err, "Should return error for excluded path")
-			require.Contains(t, err.Error(), "reference skipped", "Error should indicate reference skipped")
+			if tt.expected == nil {
+				require.NoError(t, err, "Should not return error for excluded path")
+			} else {
+				require.Error(t, err, "Should return error for excluded path")
+				require.ErrorIs(t, err, tt.expected, "Unexpected error")
+			}
 		})
 	}
 }
@@ -178,24 +235,39 @@ func TestGetImageDigestFromRef(t *testing.T) {
 	}
 }
 
-func TestShouldExclude(t *testing.T) {
+func TestShouldSkipImage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
 		ref  string
-		want bool
+		skip bool
 	}{
-		{"Exclude scratch", "scratch", true},
-		{"Do not exclude ubuntu", "ubuntu", false},
+		// skip cases
+		{"Skip scratch", "scratch", true},
+		{"Skip ubuntu without a tag", "ubuntu", true},
+		{"Skip ubuntu:latest", "ubuntu:latest", true},
+		// keep cases
+		{"Do not skip ubuntu:22.04", "ubuntu:22.04", false},
+		{"Do not skip with repo reference and tag", "myrepo/myimage:1.2.3", false},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := shouldExclude(tt.ref)
-			require.Equal(t, tt.want, got, "shouldExclude should return the correct exclusion status")
+
+			config := &config.Config{
+				Images: config.Images{
+					ImageFilter: config.ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			}
+
+			got := shouldSkipImageRef(config, tt.ref)
+			require.Equal(t, tt.skip, got, "shouldSkipImageRef should return the correct exclusion status")
 		})
 	}
 }

@@ -59,6 +59,36 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "dockerfile - tag, stage and platform",
+			args: args{
+				refstr: "FROM --platform=linux/s390x golang:1.22.2 AS build",
+			},
+			want: &interfaces.EntityRef{
+				Name:   "index.docker.io/library/golang",
+				Ref:    "sha256:d5302d40dc5fbbf38ec472d1848a9d2391a13f93293a6a5b0b87c99dc0eaa6ae",
+				Type:   image.ReferenceType,
+				Tag:    "1.22.2",
+				Prefix: "FROM --platform=linux/s390x ",
+			},
+			wantErr: false,
+		},
+		{
+			name: "dockerfile - no tag",
+			args: args{
+				refstr: "FROM golang",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "dockerfile - latest",
+			args: args{
+				refstr: "FROM golang:latest",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name: "dockerfile - already by digest",
 			args: args{
 				refstr: "FROM golang:1.22.2@sha256:aca60c1f21de99aa3a34e653f0cdc8c8ea8fe6480359229809d5bcb974f599ec",
@@ -101,6 +131,22 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 				Prefix: "",
 			},
 			wantErr: false,
+		},
+		{
+			name: "image with no tag is skipped",
+			args: args{
+				refstr: "image: nginx",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "image with latest tag is skipped",
+			args: args{
+				refstr: "image: nginx:latest",
+			},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "invalid ref string",
@@ -147,7 +193,15 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewContainerImagesReplacer(&config.Config{})
+			config := &config.Config{
+				Images: config.Images{
+					ImageFilter: config.ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			}
+			r := NewContainerImagesReplacer(config)
 			got, err := r.ParseString(ctx, tt.args.refstr)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -338,7 +392,15 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv("GITHUB_TOKEN"))
+			conf := &config.Config{
+				Images: config.Images{
+					ImageFilter: config.ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			}
+			r := NewGitHubActionsReplacer(conf).WithGitHubClientFromToken(os.Getenv("GITHUB_TOKEN"))
 			got, err := r.ParseString(ctx, tt.args.action)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -470,16 +532,195 @@ spec:
       path: /
       type: Directory
 `,
-			expected: "",
+			modified: false,
+		},
+		{
+			name: "A complex dockerfile",
+			before: `
+ARG BASE_IMAGE=alpine
+
+FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.2.1@sha256:8879a398dedf0aadaacfbd332b29ff2f84bc39ae6d4e9c0a1109db27ac5ba012 AS xx
+
+FROM --platform=$BUILDPLATFORM golang:1.20.4-alpine3.16 AS builder
+
+COPY --from=xx / /
+
+RUN apk add --update alpine-sdk ca-certificates openssl clang lld
+
+ARG TARGETPLATFORM
+
+RUN xx-apk --update add musl-dev gcc
+
+# lld has issues building static binaries for ppc so prefer ld for it
+RUN [ "$(xx-info arch)" != "ppc64le" ] || XX_CC_PREFER_LINKER=ld xx-clang --setup-target-triple
+
+RUN xx-go --wrap
+
+WORKDIR /usr/local/src/dex
+
+ARG GOPROXY
+
+ENV CGO_ENABLED=1
+
+COPY go.mod go.sum ./
+COPY api/v2/go.mod api/v2/go.sum ./api/v2/
+RUN go mod download
+
+COPY . .
+
+RUN make release-binary
+RUN xx-verify /go/bin/dex && xx-verify /go/bin/docker-entrypoint
+
+FROM alpine:3.18.2 AS stager
+
+RUN mkdir -p /var/dex
+RUN mkdir -p /etc/dex
+COPY config.docker.yaml /etc/dex/
+
+FROM alpine:3.18.2 AS gomplate
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+ENV GOMPLATE_VERSION=v3.11.4
+
+RUN wget -O /usr/local/bin/gomplate \
+  "https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_${TARGETOS:-linux}-${TARGETARCH:-amd64}${TARGETVARIANT}" \
+  && chmod +x /usr/local/bin/gomplate
+
+# For Dependabot to detect base image versions
+FROM alpine:3.18.2 AS alpine
+FROM gcr.io/distroless/static:latest AS distroless
+
+FROM $BASE_IMAGE
+
+# Dex connectors, such as GitHub and Google logins require root certificates.
+# Proper installations should manage those certificates, but it's a bad user
+# experience when this doesn't work out of the box.
+#
+# See https://go.dev/src/crypto/x509/root_linux.go for Go root CA bundle locations.
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+COPY --from=stager --chown=1001:1001 /var/dex /var/dex
+COPY --from=stager --chown=1001:1001 /etc/dex /etc/dex
+
+# Copy module files for CVE scanning / dependency analysis.
+COPY --from=builder /usr/local/src/dex/go.mod /usr/local/src/dex/go.sum /usr/local/src/dex/
+COPY --from=builder /usr/local/src/dex/api/v2/go.mod /usr/local/src/dex/api/v2/go.sum /usr/local/src/dex/api/v2/
+
+COPY --from=builder /go/bin/dex /usr/local/bin/dex
+COPY --from=builder /go/bin/docker-entrypoint /usr/local/bin/docker-entrypoint
+COPY --from=builder /usr/local/src/dex/web /srv/dex/web
+
+COPY --from=gomplate /usr/local/bin/gomplate /usr/local/bin/gomplate
+
+USER 1001:1001
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
+CMD ["dex", "serve", "/etc/dex/config.docker.yaml"]
+`,
+			expected: `
+ARG BASE_IMAGE=alpine
+
+FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.2.1@sha256:8879a398dedf0aadaacfbd332b29ff2f84bc39ae6d4e9c0a1109db27ac5ba012 AS xx
+
+FROM --platform=$BUILDPLATFORM index.docker.io/library/golang:1.20.4-alpine3.16@sha256:6469405d7297f82d56195c90a3270b0806ef4bd897aa0628477d9959ab97a577 AS builder
+
+COPY --from=xx / /
+
+RUN apk add --update alpine-sdk ca-certificates openssl clang lld
+
+ARG TARGETPLATFORM
+
+RUN xx-apk --update add musl-dev gcc
+
+# lld has issues building static binaries for ppc so prefer ld for it
+RUN [ "$(xx-info arch)" != "ppc64le" ] || XX_CC_PREFER_LINKER=ld xx-clang --setup-target-triple
+
+RUN xx-go --wrap
+
+WORKDIR /usr/local/src/dex
+
+ARG GOPROXY
+
+ENV CGO_ENABLED=1
+
+COPY go.mod go.sum ./
+COPY api/v2/go.mod api/v2/go.sum ./api/v2/
+RUN go mod download
+
+COPY . .
+
+RUN make release-binary
+RUN xx-verify /go/bin/dex && xx-verify /go/bin/docker-entrypoint
+
+FROM index.docker.io/library/alpine:3.18.2@sha256:82d1e9d7ed48a7523bdebc18cf6290bdb97b82302a8a9c27d4fe885949ea94d1 AS stager
+
+RUN mkdir -p /var/dex
+RUN mkdir -p /etc/dex
+COPY config.docker.yaml /etc/dex/
+
+FROM index.docker.io/library/alpine:3.18.2@sha256:82d1e9d7ed48a7523bdebc18cf6290bdb97b82302a8a9c27d4fe885949ea94d1 AS gomplate
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+ENV GOMPLATE_VERSION=v3.11.4
+
+RUN wget -O /usr/local/bin/gomplate \
+  "https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_${TARGETOS:-linux}-${TARGETARCH:-amd64}${TARGETVARIANT}" \
+  && chmod +x /usr/local/bin/gomplate
+
+# For Dependabot to detect base image versions
+FROM index.docker.io/library/alpine:3.18.2@sha256:82d1e9d7ed48a7523bdebc18cf6290bdb97b82302a8a9c27d4fe885949ea94d1 AS alpine
+FROM gcr.io/distroless/static:latest AS distroless
+
+FROM $BASE_IMAGE
+
+# Dex connectors, such as GitHub and Google logins require root certificates.
+# Proper installations should manage those certificates, but it's a bad user
+# experience when this doesn't work out of the box.
+#
+# See https://go.dev/src/crypto/x509/root_linux.go for Go root CA bundle locations.
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+COPY --from=stager --chown=1001:1001 /var/dex /var/dex
+COPY --from=stager --chown=1001:1001 /etc/dex /etc/dex
+
+# Copy module files for CVE scanning / dependency analysis.
+COPY --from=builder /usr/local/src/dex/go.mod /usr/local/src/dex/go.sum /usr/local/src/dex/
+COPY --from=builder /usr/local/src/dex/api/v2/go.mod /usr/local/src/dex/api/v2/go.sum /usr/local/src/dex/api/v2/
+
+COPY --from=builder /go/bin/dex /usr/local/bin/dex
+COPY --from=builder /go/bin/docker-entrypoint /usr/local/bin/docker-entrypoint
+COPY --from=builder /usr/local/src/dex/web /srv/dex/web
+
+COPY --from=gomplate /usr/local/bin/gomplate /usr/local/bin/gomplate
+
+USER 1001:1001
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint"]
+CMD ["dex", "serve", "/etc/dex/config.docker.yaml"]
+`,
 			modified: true,
 		},
 	}
+
 	for _, tt := range testCases {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			r := NewContainerImagesReplacer(&config.Config{})
+			r := NewContainerImagesReplacer(&config.Config{
+				Images: config.Images{
+					ImageFilter: config.ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			})
 			modified, newContent, err := r.ParseFile(ctx, strings.NewReader(tt.before))
 			if tt.wantErr {
 				require.False(t, modified)
