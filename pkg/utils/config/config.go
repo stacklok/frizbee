@@ -92,7 +92,8 @@ func ParseConfigFile(configfile string) (*Config, error) {
 	return ParseConfigFileFromFS(bfs, configfile)
 }
 
-func defaultConfig() *Config {
+// DefaultConfig returns the default configuration.
+func DefaultConfig() *Config {
 	return &Config{
 		GHActions: GHActions{
 			Filter: Filter{
@@ -110,7 +111,7 @@ func defaultConfig() *Config {
 
 // ParseConfigFileFromFS parses a configuration file from a filesystem.
 func ParseConfigFileFromFS(fs billy.Filesystem, configfile string) (*Config, error) {
-	cfg := defaultConfig()
+	cfg := DefaultConfig()
 	cleancfgfile := filepath.Clean(configfile)
 	cfgF, err := fs.Open(cleancfgfile)
 	if err != nil {

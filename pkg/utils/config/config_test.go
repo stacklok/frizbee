@@ -82,7 +82,7 @@ func TestParseConfigFile(t *testing.T) {
 		{
 			name:           "FileNotFound",
 			fileName:       "nonexistent.yaml",
-			expectedResult: defaultConfig(),
+			expectedResult: DefaultConfig(),
 		},
 		{
 			name:        "InvalidYaml",
@@ -152,7 +152,7 @@ images:
 			name:           "EmptyFile",
 			fileName:       "empty.yaml",
 			fsContent:      map[string]string{"empty.yaml": ""},
-			expectedResult: defaultConfig(),
+			expectedResult: DefaultConfig(),
 		},
 	}
 

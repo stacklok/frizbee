@@ -107,7 +107,7 @@ the library:
 
 ```go
 // Create a new replacer
-r := replacer.NewGitHubActionsReplacer(cfg)
+r := replacer.NewGitHubActionsReplacer(config.DefaultConfig())
 ...
 // Parse a single GitHub Action reference
 ret, err := r.ParseString(ctx, ghActionRef)
@@ -135,7 +135,7 @@ res, err := r.ListFile(fileHandler)
 
 ```go
 // Create a new replacer
-r := replacer.NewContainerImagesReplacer(cfg)
+r := replacer.NewContainerImagesReplacer(config.DefaultConfig())
 ...
 // Parse a single container image reference
 ret, err := r.ParseString(ctx, ghActionRef)
