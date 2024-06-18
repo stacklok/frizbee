@@ -310,7 +310,7 @@ func TestGetChecksum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := GetChecksum(ctx, ghcli, tt.args.action, tt.args.ref)
+			got, err := GetChecksum(ctx, config.GHActions{}, ghcli, tt.args.action, tt.args.ref)
 			if tt.wantErr {
 				require.Error(t, err, "Wanted error, got none")
 				require.Empty(t, got, "Wanted empty string, got %v", got)

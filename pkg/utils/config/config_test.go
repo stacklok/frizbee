@@ -82,13 +82,38 @@ func TestParseConfigFile(t *testing.T) {
 		{
 			name:           "FileNotFound",
 			fileName:       "nonexistent.yaml",
-			expectedResult: &Config{},
+			expectedResult: DefaultConfig(),
 		},
 		{
 			name:        "InvalidYaml",
 			fileName:    "invalid.yaml",
 			fsContent:   map[string]string{"invalid.yaml": "invalid yaml content"},
 			expectError: true,
+		},
+		{
+			name:     "DontIngoreBranches",
+			fileName: "dont_ignore_branches.yaml",
+			fsContent: map[string]string{
+				"dont_ignore_branches.yaml": `
+platform: linux/amd64
+ghactions:
+  exclude_branches:
+`,
+			},
+			expectedResult: &Config{
+				Platform: "linux/amd64",
+				GHActions: GHActions{
+					Filter: Filter{
+						ExcludeBranches: []string{},
+					},
+				},
+				Images: Images{
+					ImageFilter: ImageFilter{
+						ExcludeImages: []string{"scratch"},
+						ExcludeTags:   []string{"latest"},
+					},
+				},
+			},
 		},
 		{
 			name:     "ValidYaml",
@@ -100,13 +125,25 @@ ghactions:
   exclude:
     - pattern1
     - pattern2
+images:
+  exclude_images:
+    - notthisone
+  exclude_tags:
+    - notthistag	
 `,
 			},
 			expectedResult: &Config{
 				Platform: "linux/amd64",
 				GHActions: GHActions{
 					Filter: Filter{
-						Exclude: []string{"pattern1", "pattern2"},
+						Exclude:         []string{"pattern1", "pattern2"},
+						ExcludeBranches: []string{"*"},
+					},
+				},
+				Images: Images{
+					ImageFilter: ImageFilter{
+						ExcludeImages: []string{"notthisone"},
+						ExcludeTags:   []string{"notthistag"},
 					},
 				},
 			},
@@ -115,7 +152,7 @@ ghactions:
 			name:           "EmptyFile",
 			fileName:       "empty.yaml",
 			fsContent:      map[string]string{"empty.yaml": ""},
-			expectedResult: &Config{},
+			expectedResult: DefaultConfig(),
 		},
 	}
 
@@ -140,6 +177,15 @@ ghactions:
 				require.Equal(t, tt.expectedResult.Platform, cfg.Platform)
 				if cfg.GHActions.Exclude != nil {
 					require.Equal(t, tt.expectedResult.GHActions.Exclude, cfg.GHActions.Exclude)
+				}
+				if cfg.Images.ExcludeImages != nil {
+					require.Equal(t, tt.expectedResult.Images.ExcludeImages, cfg.Images.ExcludeImages)
+				}
+				if cfg.Images.ExcludeTags != nil {
+					require.Equal(t, tt.expectedResult.Images.ExcludeTags, cfg.Images.ExcludeTags)
+				}
+				if cfg.GHActions.ExcludeBranches != nil {
+					require.Equal(t, tt.expectedResult.GHActions.ExcludeBranches, cfg.GHActions.ExcludeBranches)
 				}
 			}
 		})

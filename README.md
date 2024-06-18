@@ -107,7 +107,7 @@ the library:
 
 ```go
 // Create a new replacer
-r := replacer.NewGitHubActionsReplacer(cfg)
+r := replacer.NewGitHubActionsReplacer(config.DefaultConfig())
 ...
 // Parse a single GitHub Action reference
 ret, err := r.ParseString(ctx, ghActionRef)
@@ -135,7 +135,7 @@ res, err := r.ListFile(fileHandler)
 
 ```go
 // Create a new replacer
-r := replacer.NewContainerImagesReplacer(cfg)
+r := replacer.NewContainerImagesReplacer(config.DefaultConfig())
 ...
 // Parse a single container image reference
 ret, err := r.ParseString(ctx, ghActionRef)
@@ -172,6 +172,25 @@ ghactions:
     - slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml
 
 ```
+
+Similarly, you can exclude actions that are referenced using a particular branch:
+```yml
+ghactions:
+  exclude_branches:
+     - main
+     - master
+```
+By default, Frizbee will exclude all actions that are referenced by a branch and only pin actions that are referenced by a tag.
+
+You can also configure Frizbee to skip processing certain container images or certain tags:
+```yml
+images:
+  exclude_images:
+    - busybox
+  exclude_tags:
+    - devel
+```
+By default, Frizbee will exclude the image named `scratch` and the tag `latest`.
 
 ## Contributing
 
