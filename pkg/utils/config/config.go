@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
@@ -107,6 +108,24 @@ func DefaultConfig() *Config {
 			},
 		},
 	}
+}
+
+// MergeUserConfig merges the user configuration with the default configuration.
+// mostly making sure that we don't try to pin the scratch image
+func MergeUserConfig(userConfig *Config) *Config {
+	if userConfig == nil {
+		return DefaultConfig()
+	}
+
+	if userConfig.Images.ExcludeImages == nil {
+		userConfig.Images.ExcludeImages = []string{"scratch"}
+	}
+
+	if !slices.Contains(userConfig.Images.ExcludeImages, "scratch") {
+		userConfig.Images.ExcludeImages = append(userConfig.Images.ExcludeImages, "scratch")
+	}
+
+	return userConfig
 }
 
 // ParseConfigFileFromFS parses a configuration file from a filesystem.
