@@ -61,6 +61,8 @@ type Replacer struct {
 
 // NewGitHubActionsReplacer creates a new replacer for GitHub actions
 func NewGitHubActionsReplacer(cfg *config.Config) *Replacer {
+	cfg = config.MergeUserConfig(cfg)
+
 	return &Replacer{
 		cfg:    *cfg,
 		parser: actions.New(),
@@ -70,6 +72,8 @@ func NewGitHubActionsReplacer(cfg *config.Config) *Replacer {
 
 // NewContainerImagesReplacer creates a new replacer for container images
 func NewContainerImagesReplacer(cfg *config.Config) *Replacer {
+	cfg = config.MergeUserConfig(cfg)
+
 	return &Replacer{
 		cfg:    *cfg,
 		parser: image.New(),

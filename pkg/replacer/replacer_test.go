@@ -196,8 +196,7 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 			config := &config.Config{
 				Images: config.Images{
 					ImageFilter: config.ImageFilter{
-						ExcludeImages: []string{"scratch"},
-						ExcludeTags:   []string{"latest"},
+						ExcludeTags: []string{"latest"},
 					},
 				},
 			}
@@ -407,8 +406,7 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 				},
 				Images: config.Images{
 					ImageFilter: config.ImageFilter{
-						ExcludeImages: []string{"scratch"},
-						ExcludeTags:   []string{"latest"},
+						ExcludeTags: []string{"latest"},
 					},
 				},
 			}
@@ -728,8 +726,7 @@ CMD ["dex", "serve", "/etc/dex/config.docker.yaml"]
 			r := NewContainerImagesReplacer(&config.Config{
 				Images: config.Images{
 					ImageFilter: config.ImageFilter{
-						ExcludeImages: []string{"scratch"},
-						ExcludeTags:   []string{"latest"},
+						ExcludeTags: []string{"latest"},
 					},
 				},
 			})
