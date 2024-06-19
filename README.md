@@ -13,6 +13,8 @@ and container images based on tags.
 
 It also includes a set of libraries for working with tags and checksums.
 
+Frizbee is available as a GitHub Action: [frizbee-action](https://github.com/marketplace/actions/frizbee-action)
+
 ## Table of Contents
 
 - [Installation](#installation)
