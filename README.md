@@ -194,9 +194,11 @@ images:
 ```
 By default, Frizbee will exclude the image named `scratch` and the tag `latest`.
 
-## Contributing
+## Contributing & Community
 
-We welcome contributions to Frizbee. Please see our [Contributing](./CONTRIBUTING.md) guide for more information.
+Frizbee is maintained by a dedicated community of developers that want this open souce project to benefit others and thrive. The main development of Frizbee is done in [Go](https://go.dev/). We welcome contributions of all types! Please see our [Contributing](./CONTRIBUTING.md) guide for more information on how you can help!
+
+If you have questions, or just want to chat with us - please use the #frizbee channel on our [Discord Server](https://discord.gg/stacklok).
 
 ## License
 
