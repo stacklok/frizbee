@@ -38,7 +38,7 @@ go get -u github.com/stacklok/frizbee
 go install github.com/stacklok/frizbee
 
 # Using Homebrew
-brew install stacklok/tap/frizbee
+brew install frizbee
 
 # Using winget
 winget install stacklok.frizbee
