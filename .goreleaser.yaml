@@ -11,6 +11,7 @@ builds:
       - -trimpath
       - -tags=netgo
     ldflags:
+      - "-s -w"
       - "-X main.Version={{ .Env.VERSION }}"
       - "-X main.Commit={{ .Env.COMMIT }}"
       - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"
