@@ -98,7 +98,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		GHActions: GHActions{
 			Filter: Filter{
-				ExcludeBranches: []string{"*"},
+				ExcludeBranches: []string{"main", "master"},
 			},
 		},
 		Images: Images{
