@@ -182,7 +182,7 @@ ghactions:
      - main
      - master
 ```
-By default, Frizbee will exclude all actions that are referenced by a branch and only pin actions that are referenced by a tag.
+By default, Frizbee will exclude all actions that are referencing `main` or `master`.
 
 You can also configure Frizbee to skip processing certain container images or certain tags:
 ```yml
