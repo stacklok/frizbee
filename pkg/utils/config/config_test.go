@@ -137,7 +137,7 @@ images:
 				GHActions: GHActions{
 					Filter: Filter{
 						Exclude:         []string{"pattern1", "pattern2"},
-						ExcludeBranches: []string{"*"},
+						ExcludeBranches: []string{"main", "master"},
 					},
 				},
 				Images: Images{
