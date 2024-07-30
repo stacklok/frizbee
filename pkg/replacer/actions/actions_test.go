@@ -292,9 +292,9 @@ func TestGetChecksum(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "bufbuild/buf-setup-action with v1 is an array",
-			args:    struct{ action, ref string }{action: "bufbuild/buf-setup-action", ref: "v1"},
-			want:    "35c243d7f2a909b1d4e40399b348a7fdab27d78d",
+			name:    "actions/setup-node with v1 is an array",
+			args:    struct{ action, ref string }{action: "actions/setup-node", ref: "v1"},
+			want:    "f1f314fca9dfce2769ece7d933488f076716723e",
 			wantErr: false,
 		},
 		{

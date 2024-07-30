@@ -343,13 +343,13 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "bufbuild/buf-setup-action with v1 is an array",
+			name: "actions/setup-node with v1 is an array",
 			args: args{
-				action: "bufbuild/buf-setup-action@v1",
+				action: "actions/setup-node@v1",
 			},
 			want: &interfaces.EntityRef{
-				Name:   "bufbuild/buf-setup-action",
-				Ref:    "35c243d7f2a909b1d4e40399b348a7fdab27d78d",
+				Name:   "actions/setup-node",
+				Ref:    "f1f314fca9dfce2769ece7d933488f076716723e",
 				Type:   actions.ReferenceType,
 				Tag:    "v1",
 				Prefix: "",
