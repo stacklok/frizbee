@@ -5,7 +5,7 @@ go 1.22.5
 require (
 	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/go-git/go-billy/v5 v5.5.0
-	github.com/google/go-containerregistry v0.20.1
+	github.com/google/go-containerregistry v0.20.2
 	github.com/google/go-github/v61 v61.0.0
 	github.com/moby/buildkit v0.15.1
 	github.com/olekukonko/tablewriter v0.0.5
@@ -22,7 +22,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v27.0.3+incompatible // indirect
+	github.com/docker/cli v27.1.1+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
