@@ -105,3 +105,4 @@ signs:
       - "--yes" # needed on cosign 2.0.0+
     artifacts: archive
     output: true
+    certificate: '{{ trimsuffix (trimsuffix .Env.artifact ".zip") ".tar.gz" }}.pem'
