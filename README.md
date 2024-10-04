@@ -34,8 +34,11 @@ To install Frizbee, you can use the following methods:
 
 ```bash
 # Using Go
-go get -u github.com/stacklok/frizbee
-go install github.com/stacklok/frizbee
+go install github.com/stacklok/frizbee@v0.1.2
+# add the path to your .bashrc
+export PATH=$PATH:$(go env GOPATH)/bin
+
+
 
 # Using Homebrew
 brew install frizbee
