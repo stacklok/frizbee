@@ -32,20 +32,6 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-# This section defines how to release to homebrew.
-brews:
-  - homepage: 'https://github.com/stacklok/frizbee'
-    description: 'frizbee is a tool you may throw a tag at and it comes back with a checksum.'
-    directory: Formula
-    commit_author:
-      name: stacklokbot
-      email: info@stacklok.com
-    repository:
-      owner: stacklok
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    test: |
-      system "#{bin}/frizbee --help"
 # This section defines how to release to winget.
 winget:
   - name: frizbee
