@@ -37,7 +37,7 @@ func CmdGHActions() *cobra.Command {
 		Short: "Replace tags in GitHub Actions workflows",
 		Long: `This utility replaces tag or branch references in GitHub Actions workflows
 with the latest commit hash of the referenced tag or branch.
-	
+
 Example:
 
 	$ frizbee actions <.github/workflows> or <actions/checkout@v4>

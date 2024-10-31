@@ -26,7 +26,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/google/go-github/v61/github"
+	"github.com/google/go-github/v66/github"
 
 	"github.com/stacklok/frizbee/pkg/interfaces"
 	"github.com/stacklok/frizbee/pkg/replacer/image"
