@@ -792,7 +792,7 @@ jobs:
     steps:
       - uses: ./minder/server.yml # this should not be replaced
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - uses: xt0rted/markdownlint-problem-matcher@c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0 # v1
+      - uses: xt0rted/markdownlint-problem-matcher@b643b0751c371f357690337d4549221347c0e1bc # v1
       - name: "Run Markdown linter"
         uses: docker://index.docker.io/avtodev/markdown-lint@sha256:6aeedc2f49138ce7a1cd0adffc1b1c0321b841dc2102408967d9301c031949ee # v1
         with:
@@ -905,7 +905,7 @@ jobs:
     steps:
       - uses: ./minder/server.yml # this should not be replaced
       - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-      - uses: xt0rted/markdownlint-problem-matcher@c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0 # v1
+      - uses: xt0rted/markdownlint-problem-matcher@b643b0751c371f357690337d4549221347c0e1bc # v1
 `,
 			modified: true,
 		},
@@ -1398,7 +1398,7 @@ jobs:
 		   steps:
 		     - uses: ./minder/server.yml # this should not be replaced
 		     - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
-		     - uses: xt0rted/markdownlint-problem-matcher@c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0 # v1
+		     - uses: xt0rted/markdownlint-problem-matcher@b643b0751c371f357690337d4549221347c0e1bc # v1
 		`,
 			expected: &ListResult{
 				Entities: []interfaces.EntityRef{
@@ -1409,7 +1409,7 @@ jobs:
 					},
 					{
 						Name: "xt0rted/markdownlint-problem-matcher",
-						Ref:  "c17ca40d1376f60aba7e7d38a8674a3f22f7f5b0",
+						Ref:  "b643b0751c371f357690337d4549221347c0e1bc",
 						Type: actions.ReferenceType,
 					},
 				},

@@ -314,7 +314,23 @@ func getCheckSumForTag(ctx context.Context, restIf interfaces.REST, owner, repo,
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
 
-	return doGetReference(ctx, restIf, path)
+	sha, otype, err := doGetReference(ctx, restIf, path)
+	if err != nil {
+		return "", err
+	}
+
+	if otype == "commit" {
+		return sha, nil
+	}
+
+	// assume otype == "tag"
+	path, err = url.JoinPath("repos", owner, repo, "git", "tags", sha)
+	if err != nil {
+		return "", fmt.Errorf("failed to join path: %w", err)
+	}
+
+	sha, _, err = doGetReference(ctx, restIf, path)
+	return sha, err
 }
 
 func getCheckSumForBranch(ctx context.Context, restIf interfaces.REST, owner, repo, branch string) (string, error) {
@@ -323,7 +339,8 @@ func getCheckSumForBranch(ctx context.Context, restIf interfaces.REST, owner, re
 		return "", fmt.Errorf("failed to join path: %w", err)
 	}
 
-	return doGetReference(ctx, restIf, path)
+	sha, _, err := doGetReference(ctx, restIf, path)
+	return sha, err
 }
 
 func excludeBranch(excludes []string, branch string) bool {
@@ -337,10 +354,10 @@ func excludeBranch(excludes []string, branch string) bool {
 	return slices.Contains(excludes, branch)
 }
 
-func doGetReference(ctx context.Context, restIf interfaces.REST, path string) (string, error) {
+func doGetReference(ctx context.Context, restIf interfaces.REST, path string) (string, string, error) {
 	req, err := restIf.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
-		return "", fmt.Errorf("cannot create REST request: %w", err)
+		return "", "", fmt.Errorf("cannot create REST request: %w", err)
 	}
 
 	resp, err := restIf.Do(ctx, req)
@@ -352,20 +369,20 @@ func doGetReference(ctx context.Context, restIf interfaces.REST, path string) (s
 	}
 
 	if err != nil && resp.StatusCode != http.StatusNotFound {
-		return "", fmt.Errorf("failed to do API request: %w", err)
+		return "", "", fmt.Errorf("failed to do API request: %w", err)
 	} else if resp.StatusCode == http.StatusNotFound {
 		// No error, but no tag found
-		return "", nil
+		return "", "", nil
 	}
 
 	var t github.Reference
 	err = json.NewDecoder(resp.Body).Decode(&t)
 	if err != nil && strings.Contains(err.Error(), "cannot unmarshal array into Go value of type") {
 		// This is a branch, not a tag
-		return "", nil
+		return "", "", nil
 	} else if err != nil {
-		return "", fmt.Errorf("canont decode response: %w", err)
+		return "", "", fmt.Errorf("canont decode response: %w", err)
 	}
 
-	return t.GetObject().GetSHA(), nil
+	return t.GetObject().GetSHA(), t.GetObject().GetType(), nil
 }
