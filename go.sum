@@ -45,8 +45,8 @@ github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/Qd
 github.com/mattn/go-runewidth v0.0.9/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m2gUSrubnMI=
 github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
-github.com/moby/buildkit v0.18.0 h1:KSelhNINJcNA3FCWBbGCytvicjP+kjU5kZlZhkTUkVo=
-github.com/moby/buildkit v0.18.0/go.mod h1:vCR5CX8NGsPTthTg681+9kdmfvkvqJBXEv71GZe5msU=
+github.com/moby/buildkit v0.18.1 h1:Iwrz2F/Za2Gjkpwu3aM2LX92AFfJCJe2oNnvGNvh2Rc=
+github.com/moby/buildkit v0.18.1/go.mod h1:vCR5CX8NGsPTthTg681+9kdmfvkvqJBXEv71GZe5msU=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy/FJl/rCYT0+EuS8+Z0z4=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
