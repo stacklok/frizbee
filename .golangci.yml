@@ -53,13 +53,13 @@ linters:
     - bidichk
     - bodyclose
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - dupl
     - errcheck
     - errname
     - exhaustive
-    - exportloopref
     - forbidigo
     - forcetypeassert
     - gci
