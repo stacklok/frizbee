@@ -46,8 +46,6 @@ func TestNewHelper(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -129,8 +127,6 @@ func TestProcessOutput(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -204,8 +200,6 @@ func TestIsPath(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

@@ -21,7 +21,6 @@ func TestNewParser(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			parser := New()
@@ -43,7 +42,6 @@ func TestSetCache(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			parser := New()
@@ -64,7 +62,6 @@ func TestSetAndGetRegex(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			parser := New()
@@ -141,7 +138,6 @@ func TestReplaceExcludedPath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := parser.Replace(ctx, tt.matchedLine, nil, cfg)
@@ -171,7 +167,6 @@ func TestConvertToEntityRef(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ref, err := parser.ConvertToEntityRef(tt.reference)
@@ -219,7 +214,6 @@ func TestGetImageDigestFromRef(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := GetImageDigestFromRef(ctx, tt.refstr, "", nil)
@@ -253,7 +247,6 @@ func TestShouldSkipImage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

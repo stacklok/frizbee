@@ -86,8 +86,6 @@ func TestYamlDockerfiles(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -155,8 +153,6 @@ func TestTraverse(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -234,8 +230,6 @@ func TestIsYAMLOrDockerfile(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

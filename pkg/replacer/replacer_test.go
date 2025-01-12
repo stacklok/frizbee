@@ -189,7 +189,6 @@ func TestReplacer_ParseContainerImageString(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
@@ -394,7 +393,6 @@ func TestReplacer_ParseGitHubActionString(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
@@ -719,7 +717,6 @@ CMD ["dex", "serve", "/etc/dex/config.docker.yaml"]
 	}
 
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
@@ -948,7 +945,6 @@ jobs:
 		},
 	}
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
@@ -994,7 +990,6 @@ func TestReplacer_NewGitHubActionsReplacer(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r := NewGitHubActionsReplacer(tt.cfg)
@@ -1017,7 +1012,6 @@ func TestReplacer_NewContainerImagesReplacer(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r := NewContainerImagesReplacer(tt.cfg)
@@ -1040,7 +1034,6 @@ func TestReplacer_WithGitHubClient(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r = r.WithGitHubClientFromToken(tt.token)
@@ -1062,7 +1055,6 @@ func TestReplacer_WithUserRegex(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r = r.WithUserRegex(tt.regex)
@@ -1082,7 +1074,6 @@ func TestReplacer_WithCacheDisabled(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r = r.WithCacheDisabled()
@@ -1106,7 +1097,6 @@ func TestReplacer_ParsePathInFS(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := r.ParsePathInFS(context.Background(), fs, tt.base)
@@ -1133,7 +1123,6 @@ func TestReplacer_ListPathInFS(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := r.ListPathInFS(fs, tt.base)
@@ -1286,7 +1275,6 @@ spec:
 		},
 	}
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r := NewContainerImagesReplacer(&config.Config{})
@@ -1441,7 +1429,6 @@ jobs:
 		},
 	}
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			r := NewGitHubActionsReplacer(&config.Config{}).WithGitHubClientFromToken(os.Getenv(cli.GitHubTokenEnvKey))
