@@ -91,7 +91,7 @@ func TestParseConfigFile(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:     "DontIngoreBranches",
+			name:     "DontIgnoreBranches",
 			fileName: "dont_ignore_branches.yaml",
 			fsContent: map[string]string{
 				"dont_ignore_branches.yaml": `
