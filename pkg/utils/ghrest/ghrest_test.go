@@ -66,8 +66,6 @@ func TestClientFunctions(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		if tt.mockResponse != nil {
 			defer gock.Off()
 			//gock.DisableNetworking()

@@ -38,8 +38,6 @@ func TestFromCommand(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -129,7 +127,7 @@ images:
   exclude_images:
     - notthisone
   exclude_tags:
-    - notthistag	
+    - notthistag
 `,
 			},
 			expectedResult: &Config{
@@ -157,8 +155,6 @@ images:
 	}
 
 	for _, tt := range testCases {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
