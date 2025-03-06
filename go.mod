@@ -7,7 +7,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/google/go-containerregistry v0.20.3
 	github.com/google/go-github/v66 v66.0.0
-	github.com/moby/buildkit v0.20.0
+	github.com/moby/buildkit v0.20.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.9.1
