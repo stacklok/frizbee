@@ -17,6 +17,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -165,6 +166,7 @@ func (r *Helper) Logf(format string, args ...interface{}) {
 	}
 }
 
+// CheckModified checks if any files were modified and returns an error if there were.
 func (r *Helper) CheckModified(modified map[string]string) error {
 	if len(modified) > 0 && r.ErrOnModified {
 		if !r.Quiet {
@@ -173,7 +175,7 @@ func (r *Helper) CheckModified(modified map[string]string) error {
 			}
 		}
 
-		return fmt.Errorf("files were modified")
+		return errors.New("files were modified")
 	}
 
 	return nil

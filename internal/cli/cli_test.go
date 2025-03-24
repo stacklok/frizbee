@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -165,7 +164,7 @@ func TestCheckModified(t *testing.T) {
 				// the output contains each expected line
 				for path := range tt.modified {
 					if !tt.helper.Quiet {
-						assert.Contains(t, output.String(), fmt.Sprintf("Modified: %s", path))
+						assert.Contains(t, output.String(), "Modified: "+path)
 					}
 				}
 			}
