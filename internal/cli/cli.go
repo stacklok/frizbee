@@ -165,6 +165,20 @@ func (r *Helper) Logf(format string, args ...interface{}) {
 	}
 }
 
+func (r *Helper) CheckModified(modified map[string]string) error {
+	if len(modified) > 0 && r.ErrOnModified {
+		if !r.Quiet {
+			for path := range modified {
+				r.Logf("Modified: %s\n", path)
+			}
+		}
+
+		return fmt.Errorf("files were modified")
+	}
+
+	return nil
+}
+
 // ProcessOutput processes the given output files.
 // If the command is quiet, the output is discarded.
 // If the command is a dry run, the output is written to the command's stdout.
