@@ -17,6 +17,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -163,6 +164,21 @@ func (r *Helper) Logf(format string, args ...interface{}) {
 	if !r.Quiet {
 		fmt.Fprintf(r.Cmd.ErrOrStderr(), format, args...) // nolint:errcheck
 	}
+}
+
+// CheckModified checks if any files were modified and returns an error if there were.
+func (r *Helper) CheckModified(modified map[string]string) error {
+	if len(modified) > 0 && r.ErrOnModified {
+		if !r.Quiet {
+			for path := range modified {
+				r.Logf("Modified: %s\n", path)
+			}
+		}
+
+		return errors.New("files were modified")
+	}
+
+	return nil
 }
 
 // ProcessOutput processes the given output files.

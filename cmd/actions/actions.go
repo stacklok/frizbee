@@ -93,6 +93,11 @@ func replaceCmd(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+
+		if err := cliFlags.CheckModified(res.Modified); err != nil {
+			return err
+		}
+
 		// Process the output files
 		return cliFlags.ProcessOutput(dir, res.Processed, res.Modified)
 	}

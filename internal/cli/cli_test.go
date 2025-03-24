@@ -76,6 +76,102 @@ func TestNewHelper(t *testing.T) {
 	}
 }
 
+func TestCheckModified(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name         string
+		helper       *Helper
+		modified     map[string]string
+		expectOutput string
+		expectError  bool
+	}{
+		{
+			name: "NoFilesModified",
+			helper: &Helper{
+				ErrOnModified: true,
+				Quiet:         false,
+				Cmd:           &cobra.Command{},
+			},
+			modified:     map[string]string{},
+			expectOutput: "",
+			expectError:  false,
+		},
+		{
+			name: "FilesModifiedWithErrorFlag",
+			helper: &Helper{
+				ErrOnModified: true,
+				Quiet:         false,
+				Cmd:           &cobra.Command{},
+			},
+			modified: map[string]string{
+				"file1.txt": "modified content",
+				"file2.txt": "another modified content",
+			},
+			expectOutput: "Modified: file1.txt\nModified: file2.txt",
+			expectError:  true,
+		},
+		{
+			name: "FilesModifiedWithoutErrorFlag",
+			helper: &Helper{
+				ErrOnModified: false,
+				Quiet:         false,
+				Cmd:           &cobra.Command{},
+			},
+			modified: map[string]string{
+				"file1.txt": "modified content",
+			},
+			expectOutput: "",
+			expectError:  false,
+		},
+		{
+			name: "FilesModifiedWithErrorFlagAndQuiet",
+			helper: &Helper{
+				ErrOnModified: true,
+				Quiet:         true,
+				Cmd:           &cobra.Command{},
+			},
+			modified: map[string]string{
+				"file1.txt": "modified content",
+			},
+			expectOutput: "",
+			expectError:  true,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Set up command error output
+			var output strings.Builder
+			tt.helper.Cmd.SetErr(&output)
+
+			// Call the CheckModified method
+			err := tt.helper.CheckModified(tt.modified)
+
+			// Check if error status matches expectation
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Equal(t, "files were modified", err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Check if output contains expected strings
+			if tt.expectOutput != "" {
+				// We can't guarantee the order of map iteration, so we check that
+				// the output contains each expected line
+				for path := range tt.modified {
+					if !tt.helper.Quiet {
+						assert.Contains(t, output.String(), "Modified: "+path)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestProcessOutput(t *testing.T) {
 	t.Parallel()
 
