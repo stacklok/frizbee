@@ -9,7 +9,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/google/go-containerregistry v0.20.5
 	github.com/google/go-github/v66 v66.0.0
-	github.com/moby/buildkit v0.22.0
+	github.com/moby/buildkit v0.23.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.9.1
@@ -24,7 +24,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v28.1.1+incompatible // indirect
+	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -43,5 +43,5 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/vbatts/tar-split v0.12.1 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 )
