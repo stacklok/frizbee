@@ -9,7 +9,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-github/v66 v66.0.0
-	github.com/moby/buildkit v0.22.0
+	github.com/moby/buildkit v0.23.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.9.1
@@ -43,5 +43,5 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/vbatts/tar-split v0.12.1 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 )
