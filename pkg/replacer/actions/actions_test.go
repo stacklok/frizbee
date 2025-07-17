@@ -217,6 +217,125 @@ func TestParseActionReference(t *testing.T) {
 	}
 }
 
+func TestParseActionReference_WithQuotes(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		input          string
+		expectedAction string
+		expectedRef    string
+		expectError    bool
+	}{
+		{
+			name:           "quoted action reference",
+			input:          "'google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f'",
+			expectedAction: "google-github-actions/auth",
+			expectedRef:    "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectError:    false,
+		},
+		{
+			name:           "double quoted action reference",
+			input:          "\"google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f\"",
+			expectedAction: "google-github-actions/auth",
+			expectedRef:    "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectError:    false,
+		},
+		{
+			name:           "unquoted action reference",
+			input:          "google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectedAction: "google-github-actions/auth",
+			expectedRef:    "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectError:    false,
+		},
+		{
+			name:        "invalid action reference",
+			input:       "invalid-action-reference",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			action, ref, err := ParseActionReference(tc.input)
+
+			if tc.expectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedAction, action)
+			require.Equal(t, tc.expectedRef, ref)
+		})
+	}
+}
+
+func TestConvertToEntityRef_WithQuotes(t *testing.T) {
+	t.Parallel()
+
+	parser := New()
+
+	testCases := []struct {
+		name         string
+		input        string
+		expectedName string
+		expectedRef  string
+		expectedType string
+		expectError  bool
+	}{
+		{
+			name:         "quoted action reference with uses prefix",
+			input:        "uses: 'google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f'",
+			expectedName: "google-github-actions/auth",
+			expectedRef:  "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectedType: "action",
+			expectError:  false,
+		},
+		{
+			name:         "double quoted action reference with uses prefix",
+			input:        "uses: \"google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f\"",
+			expectedName: "google-github-actions/auth",
+			expectedRef:  "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectedType: "action",
+			expectError:  false,
+		},
+		{
+			name:         "unquoted action reference with uses prefix",
+			input:        "uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectedName: "google-github-actions/auth",
+			expectedRef:  "6fc4af4b145ae7821d527454aa9bd537d1f2dc5f",
+			expectedType: "action",
+			expectError:  false,
+		},
+		{
+			name:        "invalid action reference",
+			input:       "uses: invalid-action-reference",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			result, err := parser.ConvertToEntityRef(tc.input)
+
+			if tc.expectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedName, result.Name)
+			require.Equal(t, tc.expectedRef, result.Ref)
+			require.Equal(t, tc.expectedType, result.Type)
+		})
+	}
+}
+
 func TestGetChecksum(t *testing.T) {
 	t.Parallel()
 

@@ -120,7 +120,6 @@ func (p *Parser) replaceAction(
 	restIf interfaces.REST,
 	cfg config.Config,
 ) (*interfaces.EntityRef, error) {
-
 	// If the value is a local path or should be excluded, skip it
 	if isLocal(matchedLine) || shouldExclude(&cfg.GHActions, matchedLine) {
 		return nil, fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, matchedLine)
@@ -209,6 +208,8 @@ func (p *Parser) replaceDocker(
 // ConvertToEntityRef converts an action reference to an EntityRef
 func (_ *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
 	reference = strings.TrimPrefix(reference, prefixUses)
+	reference = stripQuotes(reference)
+
 	refType := ReferenceType
 	separator := "@"
 	// Update the separator in case this is a docker reference with a digest
@@ -245,8 +246,22 @@ func shouldExclude(cfg *config.GHActions, input string) bool {
 	return false
 }
 
+// stripQuotes removes single and double quotes from the beginning and end of a string
+func stripQuotes(input string) string {
+	input = strings.TrimSpace(input)
+	if len(input) >= 2 {
+		if (input[0] == '\'' && input[len(input)-1] == '\'') ||
+			(input[0] == '"' && input[len(input)-1] == '"') {
+			return input[1 : len(input)-1]
+		}
+	}
+	return input
+}
+
 // ParseActionReference parses an action reference into action and reference.
 func ParseActionReference(input string) (action string, reference string, err error) {
+	input = stripQuotes(input)
+
 	frags := strings.Split(input, "@")
 	if len(frags) != 2 {
 		return "", "", fmt.Errorf("invalid action reference: %s", input)
