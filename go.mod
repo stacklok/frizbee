@@ -2,7 +2,7 @@ module github.com/stacklok/frizbee
 
 go 1.24.0
 
-toolchain go1.24.1
+toolchain go1.24.6
 
 require (
 	github.com/deckarep/golang-set/v2 v2.8.0
