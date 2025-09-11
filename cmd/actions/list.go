@@ -99,7 +99,7 @@ func list(cmd *cobra.Command, args []string) error {
 		return nil
 	case "table":
 		table := tablewriter.NewWriter(cmd.OutOrStdout())
-		table.SetHeader([]string{"No", "Type", "Name", "Ref"})
+		table.Header([]string{"No", "Type", "Name", "Ref"})
 		for i, a := range res.Entities {
 			table.Append([]string{strconv.Itoa(i + 1), a.Type, a.Name, a.Ref})
 		}
