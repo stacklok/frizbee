@@ -101,9 +101,13 @@ func list(cmd *cobra.Command, args []string) error {
 		table := tablewriter.NewWriter(cmd.OutOrStdout())
 		table.Header([]string{"No", "Type", "Name", "Ref"})
 		for i, a := range res.Entities {
-			table.Append([]string{strconv.Itoa(i + 1), a.Type, a.Name, a.Ref})
+			if err := table.Append([]string{strconv.Itoa(i + 1), a.Type, a.Name, a.Ref}); err != nil {
+				return fmt.Errorf("failed to append table row: %w", err)
+			}
 		}
-		table.Render()
+		if err := table.Render(); err != nil {
+			return fmt.Errorf("failed to render table: %w", err)
+		}
 		return nil
 	default:
 		return fmt.Errorf("unknown output format: %s", output)
