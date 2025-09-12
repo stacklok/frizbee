@@ -65,7 +65,7 @@ type Config struct {
 
 // GHActions is the GitHub Actions configuration.
 type GHActions struct {
-	Filter `yaml:",inline" mapstructure:",inline"`
+	Filter `yaml:",inline" mapstructure:",squash"`
 }
 
 // Filter is a common configuration for filtering out patterns.
@@ -77,7 +77,7 @@ type Filter struct {
 
 // Images is the image configuration.
 type Images struct {
-	ImageFilter `yaml:",inline" mapstructure:",inline"`
+	ImageFilter `yaml:",inline" mapstructure:",squash"`
 }
 
 // ImageFilter is the image filter configuration.

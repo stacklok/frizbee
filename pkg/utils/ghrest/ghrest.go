@@ -63,7 +63,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 	}
 
 	if resp.Response != nil {
-		resp.Response.Body = io.NopCloser(&buf)
+		resp.Body = io.NopCloser(&buf)
 	}
 
 	return resp.Response, err

@@ -206,7 +206,7 @@ func (p *Parser) replaceDocker(
 }
 
 // ConvertToEntityRef converts an action reference to an EntityRef
-func (_ *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
+func (*Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
 	reference = strings.TrimPrefix(reference, prefixUses)
 	reference = stripQuotes(reference)
 
@@ -290,7 +290,7 @@ func GetChecksum(ctx context.Context, cfg config.GHActions, restIf interfaces.RE
 	}
 
 	// check branch
-	if excludeBranch(cfg.Filter.ExcludeBranches, ref) {
+	if excludeBranch(cfg.ExcludeBranches, ref) {
 		// if a branch is excluded, we won't know if it's a valid reference
 		// but that's OK - we just won't touch that reference
 		return "", fmt.Errorf("%w: %s", interfaces.ErrReferenceSkipped, ref)
