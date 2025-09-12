@@ -250,9 +250,9 @@ type fileInfoMock struct {
 	dir  bool
 }
 
-func (f *fileInfoMock) Name() string       { return f.name }
-func (_ *fileInfoMock) Size() int64        { return 0 }
-func (_ *fileInfoMock) Mode() os.FileMode  { return 0 }
-func (_ *fileInfoMock) ModTime() time.Time { return time.Time{} }
-func (f *fileInfoMock) IsDir() bool        { return f.dir }
-func (_ *fileInfoMock) Sys() interface{}   { return nil }
+func (f *fileInfoMock) Name() string     { return f.name }
+func (*fileInfoMock) Size() int64        { return 0 }
+func (*fileInfoMock) Mode() os.FileMode  { return 0 }
+func (*fileInfoMock) ModTime() time.Time { return time.Time{} }
+func (f *fileInfoMock) IsDir() bool      { return f.dir }
+func (*fileInfoMock) Sys() interface{}   { return nil }

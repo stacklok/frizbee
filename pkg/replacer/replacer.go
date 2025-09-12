@@ -357,15 +357,12 @@ func listReferencesInFile(
 
 		// See if we can match an entity reference in the line
 		foundEntries := re.FindAllString(line, -1)
-		// nolint:gosimple
-		if foundEntries != nil {
-			for _, entry := range foundEntries {
-				e, err := parser.ConvertToEntityRef(entry)
-				if err != nil {
-					continue
-				}
-				found.Add(*e)
+		for _, entry := range foundEntries {
+			e, err := parser.ConvertToEntityRef(entry)
+			if err != nil {
+				continue
 			}
+			found.Add(*e)
 		}
 	}
 

@@ -141,7 +141,7 @@ func (p *Parser) Replace(
 }
 
 // ConvertToEntityRef converts a container image reference to an EntityRef
-func (_ *Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
+func (*Parser) ConvertToEntityRef(reference string) (*interfaces.EntityRef, error) {
 	reference = strings.TrimPrefix(reference, prefixImage)
 	reference = strings.TrimPrefix(reference, prefixFROM)
 	var sep string
@@ -238,12 +238,12 @@ func shouldSkipImageRef(cfg *config.Config, ref string) bool {
 	}
 
 	imageName := getImageNameFromRef(nameRef)
-	if slices.Contains(cfg.Images.ImageFilter.ExcludeImages, imageName) {
+	if slices.Contains(cfg.Images.ExcludeImages, imageName) {
 		return true
 	}
 
 	tag := nameRef.Identifier()
-	return slices.Contains(cfg.Images.ImageFilter.ExcludeTags, tag)
+	return slices.Contains(cfg.Images.ExcludeTags, tag)
 }
 
 // TODO(jakub): this is a bit of a hack, but I didn't find a better way to get just the name
