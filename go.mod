@@ -10,7 +10,7 @@ require (
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-github/v66 v66.0.0
 	github.com/moby/buildkit v0.25.1
-	github.com/olekukonko/tablewriter v1.0.9
+	github.com/olekukonko/tablewriter v1.1.0
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
