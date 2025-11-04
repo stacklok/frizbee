@@ -9,6 +9,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/google/go-containerregistry v0.20.6
 	github.com/google/go-github/v66 v66.0.0
+	github.com/google/go-github/v77 v77.0.0
 	github.com/moby/buildkit v0.25.1
 	github.com/olekukonko/tablewriter v1.0.9
 	github.com/puzpuzpuz/xsync v1.5.2
