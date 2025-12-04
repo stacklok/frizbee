@@ -12,7 +12,7 @@ require (
 	github.com/moby/buildkit v0.25.1
 	github.com/olekukonko/tablewriter v1.0.9
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sync v0.17.0
 	gopkg.in/h2non/gock.v1 v1.1.2
