@@ -28,6 +28,6 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@e296a935590eb16afc0c0108289f68c87e2a89a5 # v4
+        uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4
         with:
           sarif_file: 'trivy-results.sarif'
