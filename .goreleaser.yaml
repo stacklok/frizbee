@@ -27,11 +27,11 @@ builds:
     main: ./main.go
 # This section defines the release format.
 archives:
-  - format: tar.gz # we can use binary, but it seems there's an issue where goreleaser skips the sboms
+  - formats: [tar.gz] # we can use binary, but it seems there's an issue where goreleaser skips the sboms
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 # This section defines how to release to winget.
 # winget:
 #   - name: frizbee
@@ -85,10 +85,9 @@ signs:
   - cmd: cosign
     args:
       - "sign-blob"
-      - "--output-signature=${signature}"
-      - "--output-certificate=${certificate}"
+      - "--bundle=${signature}" # cosign v3+: bundles signature and certificate together
       - "${artifact}"
       - "--yes" # needed on cosign 2.0.0+
     artifacts: archive
     output: true
-    certificate: '{{ trimsuffix (trimsuffix .Env.artifact ".zip") ".tar.gz" }}.pem'
+    signature: "${artifact}.sigstore.json"
