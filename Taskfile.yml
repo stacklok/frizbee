@@ -25,4 +25,4 @@ tasks:
   lint:
     desc: Run linter
     cmds:
-      - golangci-lint run --timeout 5m0s --config .golangci.yml
+      - golangci-lint run --allow-parallel-runners --timeout 5m0s --config .golangci.yml
