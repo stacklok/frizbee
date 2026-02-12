@@ -7,6 +7,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.7.0
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-github/v66 v66.0.0
+	github.com/google/go-github/v82 v82.0.0
 	github.com/moby/buildkit v0.27.1
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/puzpuzpuz/xsync v1.5.2
@@ -30,7 +31,7 @@ require (
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/h2non/parth v0.0.0-20190131123155-b4df798d6542 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
