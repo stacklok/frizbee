@@ -4,16 +4,15 @@ go 1.25.6
 
 require (
 	github.com/deckarep/golang-set/v2 v2.8.0
-	github.com/go-git/go-billy/v5 v5.7.0
-	github.com/google/go-containerregistry v0.21.0
+	github.com/go-git/go-billy/v5 v5.8.0
+	github.com/google/go-containerregistry v0.21.2
 	github.com/google/go-github/v66 v66.0.0
-	github.com/google/go-github/v83 v83.0.0
-	github.com/moby/buildkit v0.27.1
+	github.com/moby/buildkit v0.28.0
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	gopkg.in/h2non/gock.v1 v1.1.2
 	gopkg.in/yaml.v3 v3.0.1
 )
