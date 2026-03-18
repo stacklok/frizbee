@@ -1,13 +1,12 @@
 module github.com/stacklok/frizbee
 
-go 1.25.6
+go 1.25.7
 
 require (
 	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/go-git/go-billy/v5 v5.8.0
-	github.com/google/go-containerregistry v0.21.2
+	github.com/google/go-containerregistry v0.21.3
 	github.com/google/go-github/v66 v66.0.0
-	github.com/google/go-github/v84 v84.0.0
 	github.com/moby/buildkit v0.28.0
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/puzpuzpuz/xsync v1.5.2
@@ -26,7 +25,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v29.2.1+incompatible // indirect
+	github.com/docker/cli v29.3.0+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -50,6 +49,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/vbatts/tar-split v0.12.2 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	gotest.tools/v3 v3.5.2 // indirect
 )
