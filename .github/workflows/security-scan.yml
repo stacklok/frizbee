@@ -1,0 +1,30 @@
+name: Security Scan
+
+on:
+  pull_request:
+
+jobs:
+  grype-security-scan:
+    runs-on: ubuntu-latest
+    name: Grype
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Security Scan
+        id: grype-scan
+        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v7.3.2
+        with:
+          path: "."
+          fail-build: true
+          only-fixed: true
+          severity-cutoff: "high"
+          output-format: "sarif"
+
+      - name: Upload scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: "grype"
