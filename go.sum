@@ -61,6 +61,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/moby/buildkit v0.28.0 h1:rKulfRRSduHJPNpLTk481fHElqN9tps0VUx8YV/5zsA=
 github.com/moby/buildkit v0.28.0/go.mod h1:RCuOcj/bVsCriBG8NeFzRxjiCFQKnKP7KOVlNTS18t4=
+github.com/moby/buildkit v0.28.1 h1:Tq6H6gOMU2JyEQ5rA0pa7Ey3VGNR3qpw90liSIpMQoo=
+github.com/moby/buildkit v0.28.1/go.mod h1:xO6wb9VBXszkIBxaGTLXc1rQORVQFIJRt3GSX7KzCFc=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy/FJl/rCYT0+EuS8+Z0z4=
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 h1:zrbMGy9YXpIeTnGj4EljqMiZsIcE09mmF8XsD5AYOJc=
