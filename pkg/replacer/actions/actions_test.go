@@ -368,15 +368,15 @@ func TestGetChecksum(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "aquasecurity/trivy-action with 0.14.0",
-			args:    struct{ action, ref string }{action: "aquasecurity/trivy-action", ref: "0.14.0"},
-			want:    "2b6a709cf9c4025c5438138008beaddbb02086f0",
+			name:    "actions/setup-go with v5.0.0",
+			args:    struct{ action, ref string }{action: "actions/setup-go", ref: "v5.0.0"},
+			want:    "0c52d547c9bc32b1aa3301fd7a9cb496313a4491",
 			wantErr: false,
 		},
 		{
-			name:    "aquasecurity/trivy-action with branch returns checksum",
-			args:    struct{ action, ref string }{action: "aquasecurity/trivy-action", ref: "bump-trivy"},
-			want:    "fb5e1b36be448e92ca98648c661bd7e9da1f1317",
+			name:    "actions/setup-go with branch returns checksum",
+			args:    struct{ action, ref string }{action: "actions/setup-go", ref: "releases/v5"},
+			want:    "40f1582b2485089dde7abd97c1529aa768e1baff",
 			wantErr: false,
 		},
 		{
