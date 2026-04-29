@@ -22,7 +22,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 )
 
 // Client is the struct that contains the GitHub REST API client
