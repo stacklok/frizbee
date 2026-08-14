@@ -20,7 +20,6 @@ jobs:
           go-version: 'stable'
           cache: true
 
-
       - name: setup task
         uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
         with:
@@ -52,7 +51,6 @@ jobs:
           go-version: 'stable'
           cache: true
 
-
       - name: setup task
         uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
         with:
@@ -80,7 +78,6 @@ jobs:
           go-version: 'stable'
           cache: true
 
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
 
@@ -95,7 +92,6 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-
 
       - name: setup task
         uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
