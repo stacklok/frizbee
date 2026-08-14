@@ -1,11 +1,60 @@
 version: 2
+
+# Dependency updates are batched into as few PRs as possible.
+#
+# Grouping rules of thumb:
+#   * minor/patch updates are grouped into a single PR per ecosystem -- they are
+#     low risk and reviewing them one by one is pure noise.
+#   * major updates are deliberately left out of the groups so that Dependabot
+#     raises them individually. A breaking change deserves its own review, and
+#     it must not block the rest of the batch from merging.
+#   * security updates get their own group so they stay easy to spot.
+#
+# If a Dockerfile or an OCI image build is ever added to this repo, add a
+# "docker" package-ecosystem entry here following the same pattern.
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
-    open-pull-requests-limit: 10
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      go-deps:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      go-deps-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"

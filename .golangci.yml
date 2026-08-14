@@ -52,6 +52,10 @@ linters:
     - unused
     - usestdlibvars
   settings:
+    goconst:
+      # Table-driven tests repeat literals by design; flagging them adds noise
+      # without improving the tests.
+      ignore-tests: true
     gocyclo:
       min-complexity: 15
     lll:
