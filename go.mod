@@ -6,7 +6,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/go-git/go-billy/v5 v5.9.1
 	github.com/google/go-containerregistry v0.22.1
-	github.com/google/go-github/v85 v85.0.0
+	github.com/google/go-github/v91 v91.0.0
 	github.com/google/go-github/v91 v91.0.0
 	github.com/moby/buildkit v0.33.0
 	github.com/olekukonko/tablewriter v1.1.4
