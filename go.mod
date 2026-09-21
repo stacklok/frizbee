@@ -9,7 +9,7 @@ require (
 	github.com/google/go-github/v85 v85.0.0
 	github.com/google/go-github/v91 v91.0.0
 	github.com/moby/buildkit v0.33.0
-	github.com/olekukonko/tablewriter v1.1.4
+	github.com/olekukonko/tablewriter v1.1.5
 	github.com/puzpuzpuz/xsync v1.5.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
