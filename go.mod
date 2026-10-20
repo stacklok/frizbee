@@ -4,6 +4,7 @@ go 1.26.3
 
 require (
 	github.com/deckarep/golang-set/v2 v2.9.0
+	github.com/deckarep/golang-set/v3 v3.0.0
 	github.com/go-git/go-billy/v5 v5.9.1
 	github.com/google/go-containerregistry v0.22.1
 	github.com/google/go-github/v85 v85.0.0
