@@ -27,7 +27,7 @@ import (
 	"strings"
 	"sync"
 
-	mapset "github.com/deckarep/golang-set/v2"
+	mapset "github.com/deckarep/golang-set/v3"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
 	"golang.org/x/sync/errgroup"

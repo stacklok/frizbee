@@ -22,7 +22,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/go-github/v85/github"
+	"github.com/google/go-github/v93/github"
 )
 
 // Client is the struct that contains the GitHub REST API client
@@ -33,10 +33,17 @@ type Client struct {
 
 // NewClient creates a new instance of GhRest
 func NewClient(token string) *Client {
-	ghcli := github.NewClient(nil)
-
+	var opts []github.ClientOptionsFunc
 	if token != "" {
-		ghcli = ghcli.WithAuthToken(token)
+		opts = append(opts, github.WithAuthToken(token))
+	}
+
+	// NewClient only fails on invalid options. The only option we pass is a
+	// non-empty token, so an error here is a programming bug, not a runtime
+	// condition callers could handle.
+	ghcli, err := github.NewClient(opts...)
+	if err != nil {
+		panic("ghrest: creating GitHub client: " + err.Error())
 	}
 	return &Client{
 		client: ghcli,
@@ -48,7 +55,9 @@ func NewClient(token string) *Client {
 // always be specified without a preceding slash. If specified, the value
 // pointed to by body is JSON encoded and included as the request body.
 func (c *Client) NewRequest(method, requestUrl string, body any) (*http.Request, error) {
-	return c.client.NewRequest(method, requestUrl, body)
+	// The context is attached later in Do, so callers keep a single place to
+	// pass it and cancellation still applies to the actual round trip.
+	return c.client.NewRequest(context.Background(), method, requestUrl, body)
 }
 
 // Do sends an API request and returns the API response.
@@ -57,7 +66,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 
 	// The GitHub client closes the response body, so we need to capture it
 	// in a buffer so that we can return it to the caller
-	resp, err := c.client.Do(ctx, req, &buf)
+	resp, err := c.client.Do(req.WithContext(ctx), &buf)
 	if err != nil && resp == nil {
 		return nil, err
 	}

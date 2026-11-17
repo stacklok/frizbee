@@ -3,11 +3,10 @@ module github.com/stacklok/frizbee
 go 1.26.8
 
 require (
-	github.com/deckarep/golang-set/v2 v2.9.0
+	github.com/deckarep/golang-set/v3 v3.0.0
 	github.com/go-git/go-billy/v5 v5.9.2
 	github.com/google/go-containerregistry v0.22.1
-	github.com/google/go-github/v85 v85.0.0
-	github.com/google/go-github/v91 v91.0.0
+	github.com/google/go-github/v93 v93.0.0
 	github.com/moby/buildkit v0.35.0
 	github.com/olekukonko/tablewriter v1.1.5
 	github.com/puzpuzpuz/xsync v1.5.2
@@ -43,7 +42,6 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	go.mongodb.org/mongo-driver v1.17.7 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
