@@ -5,6 +5,7 @@
     "schedule:weekly"
   ],
   "prConcurrentLimit": 5,
+  "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "packageRules": [
     {
       "description": "Batch non-major Go module updates into a single PR",
