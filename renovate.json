@@ -8,18 +8,18 @@
   "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
   "packageRules": [
     {
-      "description": "Batch non-major Go module updates into a single PR",
-      "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "go deps",
+      "description": "Batch every non-major update (Go modules and GitHub Actions, incl. digest re-pins) into a single PR",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps"
     },
     {
-      "description": "Batch non-major GitHub Actions updates (incl. digest re-pins) into a single PR",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
-      "groupName": "github actions",
+      "description": "Batch every major update into a single PR, kept apart so one breaking change does not block the routine updates",
+      "matchUpdateTypes": ["major"],
+      "groupName": "all major dependencies",
+      "groupSlug": "all-major",
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps"
     }
