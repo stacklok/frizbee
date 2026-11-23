@@ -17,7 +17,7 @@
 package store
 
 import (
-	"github.com/puzpuzpuz/xsync"
+	"github.com/puzpuzpuz/xsync/v4"
 )
 
 // RefCacher is an interface for caching references.
